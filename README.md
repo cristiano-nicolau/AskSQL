@@ -30,10 +30,3 @@ O **AskQSL** é uma ferramenta que permite a conversão de consultas em linguage
    python app.py
    ```
 3. **Fazer uma Consulta**: Digite uma pergunta como *"Quantos clientes compraram no último mês?"* e veja a query SQL gerada junto ao relatório ou gráfico correspondente.
-
-## Contribuição
-Se quiser contribuir, fique à vontade para abrir uma issue ou pull request! Qualquer sugestão de melhoria é bem-vinda.
-
-## Licença
-Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
