@@ -13,8 +13,6 @@ config = {
     'database': os.getenv("DATABASE")
 }
 
-print(config)
-
 # String de conexão
 conn_str = (
     f"DRIVER={{ODBC Driver 18 for SQL Server}};"
@@ -110,6 +108,21 @@ try:
 
     # Print the completion returned by the LLM.
     print(chat_completion.choices[0].message.content)
+    def generate_query(msg):
+        # Vamos receber toda a resposta do Groq e retornar apenas a query, quero só do ```sql ... ```
+        query = ""
+        inside_sql_block = False
+        for line in msg.split("\n"):
+            if line.strip().startswith("```sql"):
+                inside_sql_block = True
+                continue
+            if line.strip().startswith("```") and inside_sql_block:
+                inside_sql_block = False
+                continue
+            if inside_sql_block:
+                query += line + "\n"
+        return query
+    print(generate_query(chat_completion.choices[0].message.content))
 
 except Exception as e:
     print("Erro ao conectar:", e)
