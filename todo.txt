@@ -1,0 +1,10 @@
+# TODO: 
+# explain the previous results, adicionar um /explain para explicar o resultado no caso do report
+# para isso é preciso guardar a query e o resultado
+# adicionar um /reset para limpar a conversa
+# adicionar um /help para mostrar as opções
+# add the option to generate a chart, pode ser atraves do modelo llm gera o codigo do grafico
+
+
+
+
