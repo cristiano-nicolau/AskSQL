@@ -340,16 +340,25 @@ def main():
             elif option == "Report Generation":
                 sql_query = model(prompt, st.session_state.data, st.session_state.client)
                 clean_query = generate_query(sql_query)
-                try:
-                    df, raw_data, columns = execute_query_report(clean_query, st.session_state.conn)
-                    st.dataframe(df)
-                    with st.expander("View Raw Data"):
-                        st.write(raw_data)
-                    st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df})
-                except Exception as e:
-                    error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{clean_query}\n```"
+                if not clean_query:
+                    error_message = "Error generating SQL query. Please ask a different question."
                     st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
                     st.chat_message("assistant").write(error_message)
+                else:
+                    try:
+                        df, raw_data, columns = execute_query_report(clean_query, st.session_state.conn)
+                        if df.empty:
+                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": "No results found. Please try a different question."})
+                            st.chat_message("assistant").write("No results found. Please try a different question.")
+                        else:
+                            st.dataframe(df)
+                            with st.expander("View Raw Data"):
+                                st.write(raw_data)
+                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df})
+                    except Exception as e:
+                        error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{clean_query}\n```"
+                        st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
+                        st.chat_message("assistant").write(error_message)
                     
             elif option == "Chart Generation":
                 pass
