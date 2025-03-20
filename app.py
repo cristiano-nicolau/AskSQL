@@ -206,12 +206,29 @@ def process_command(command, option):
         st.session_state[f"messages_{option}"] = []
         st.session_state[f"messages_{option}"].append({"role": "assistant", "content": "Chat history has been reset.\n How can I help you today?"})
         st.rerun()
+    elif command == "/tables":
+        tables = st.session_state.data
+        tables_info = ""
+        for table, info in tables.items():
+            tables_info += f"**{table}**\n"
+            for col, dtype in info["columns"]:
+                tables_info += f"- {col} ({dtype})\n"
+            for fk in info["foreign_keys"]:
+                tables_info += f"- FOREIGN KEY ({fk['column']}) REFERENCES {fk['references']}\n"
+            tables_info += "\n"
+
+        tables_info += "This is the schema of the tables in your database. Use this information to ask questions about the data in your database."
+        return {
+            "role": "assistant", 
+            "content": f"**Database Schema**\n\n{tables_info}"
+        }
+        
     else:
         available_commands = "Available commands:\n\n"
         if option in ["Report Generation", "Chart Generation"]:
             available_commands += "- **/explain <your prompt>**: Get explanation about the app and how to use it.\n"
         
-        available_commands += "- **/help**: Display this help message.\n- **/reset**: Reset the conversation history."
+        available_commands += "- **/help**: Display this help message.\n- **/reset**: Reset the conversation history. \n- **/tables**: List the tables and columns in the database.\n"
         
         return {
             "role": "assistant", 
@@ -260,6 +277,13 @@ def main():
             st.write("---")
         st.caption("This is the schema of the tables in your database. Use this information to ask questions about the data in your database.")
 
+        with st.expander("Command Tags"):
+            st.markdown("""
+                - **/explain <your prompt>**: Get explanation about the app and how to use it.
+                - **/help**: Display this help message.
+                - **/reset**: Reset the conversation history.
+                - **/tables**: List the tables and columns in the database.
+            """)
 
     st.markdown("""
         <style>
