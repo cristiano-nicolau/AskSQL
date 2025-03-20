@@ -8,3 +8,5 @@
 
 
 
+# NOTE:
+ Adicionar no relatório a explicação das tags, e o que elas significam

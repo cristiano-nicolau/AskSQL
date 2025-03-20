@@ -187,6 +187,36 @@ def execute_query_chart(query, conn):
     """Gera um gráfico a partir de uma query SQL."""
     pass
 
+def process_command(command, option):
+    """Process special commands that start with /"""
+
+    if command == "/explain":
+        # TODO: Parte do /explain que explica os resultados anteriores 
+        if option in ["Report Generation", "Chart Generation"]:
+            return {
+                "role": "assistant", 
+                "content": "**AskSQL Explanation**\n\nThis app helps you query databases using natural language. Just type your question about the data, and I'll generate the SQL query for you. For example, try asking 'Show me the students who are enrolled in the Database Systems course'.\n\nYou can choose between three modes:\n1. **Report Generation**: Get results in a table format\n2. **Chart Generation**: Visualize your data\n3. **SQL Query Generation**: Just see the SQL query without running it"
+            }
+        else:
+            return {
+                "role": "assistant", 
+                "content": "The /explain command is only available in Report Generation and Chart Generation modes."
+            }
+    elif command == "/reset":
+        st.session_state[f"messages_{option}"] = []
+        st.session_state[f"messages_{option}"].append({"role": "assistant", "content": "Chat history has been reset.\n How can I help you today?"})
+        st.rerun()
+    else:
+        available_commands = "Available commands:\n\n"
+        if option in ["Report Generation", "Chart Generation"]:
+            available_commands += "- **/explain <your prompt>**: Get explanation about the app and how to use it.\n"
+        
+        available_commands += "- **/help**: Display this help message.\n- **/reset**: Reset the conversation history."
+        
+        return {
+            "role": "assistant", 
+            "content": f"**AskSQL Explanation**\n\nThis app helps you query databases using natural language. Just type your question about the data, and I'll generate the SQL query for you. For example, try asking 'Show me the students who are enrolled in the Database Systems course'.\n\nYou can choose between three modes:\n1. **Report Generation**: Get results in a table format\n2. **Chart Generation**: Visualize your data\n3. **SQL Query Generation**: Just see the SQL query without running it \n\n{available_commands}"
+        }
 
 def main():
     if 'conn' not in st.session_state:
@@ -231,6 +261,14 @@ def main():
         st.caption("This is the schema of the tables in your database. Use this information to ask questions about the data in your database.")
 
 
+    st.markdown("""
+        <style>
+        .command-tag {
+            color: #00b894;
+            font-weight: bold;
+        }
+        </style>
+     """, unsafe_allow_html=True)
 
     if f"messages_{option}" not in st.session_state:
         st.session_state[f"messages_{option}"] = [initial_message]
@@ -241,34 +279,55 @@ def main():
             with st.expander("View Raw Data"):
                 st.write(msg["content"])
         else:
-            st.chat_message(msg["role"]).write(msg["content"])
+            content = msg["content"]
+            if msg["role"] == "user" and content.startswith("/"):
+                command = content.split()[0]
+                styled_content = f'<span class="command-tag">{command}</span> {content[len(command):]}'
+                st.chat_message(msg["role"]).markdown(styled_content, unsafe_allow_html=True)
+            else:
+                st.chat_message(msg["role"]).write(content)
 
     prompt = st.chat_input("Ask me a question")
 
     if prompt:
         st.session_state[f"messages_{option}"].append({"role": "user", "content": prompt})
-        st.chat_message("user").write(prompt)
-        
-        if option == "SQL Query Generation":
-            sql_query = model(prompt, st.session_state.data, st.session_state.client)
-            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": f"Here is the SQL query:\n{sql_query}\n"})
-            st.chat_message("assistant").write(f"Here is the SQL query:\n{sql_query}\n")
 
-        elif option == "Report Generation":
-            sql_query = model(prompt, st.session_state.data, st.session_state.client)
-            clean_query = generate_query(sql_query)
-            try:
-                df, raw_data, columns = execute_query_report(clean_query, st.session_state.conn)
-                st.dataframe(df)
-                with st.expander("View Raw Data"):
-                    st.write(raw_data)
-                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df})
-            except Exception as e:
-                error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{clean_query}\n```"
-                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
-                st.chat_message("assistant").write(error_message)
-                
-        elif option == "Chart Generation":
-           pass
+        if prompt.startswith("/"):
+            command = prompt.split()[0]
+            styled_prompt = f'<span class="command-tag">{command}</span> {prompt[len(command):]}'
+            st.chat_message("user").markdown(styled_prompt, unsafe_allow_html=True)
+        else:
+            st.chat_message("user").write(prompt)
+        
+        if prompt.startswith("/"):
+            command = prompt.split()[0]
+            command_response = process_command(command, option)
+            
+            if command_response:
+                st.session_state[f"messages_{option}"].append(command_response)
+                st.chat_message("assistant").write(command_response["content"])
+
+        else:
+            if option == "SQL Query Generation":
+                sql_query = model(prompt, st.session_state.data, st.session_state.client)
+                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": f"Here is the SQL query:\n{sql_query}\n"})
+                st.chat_message("assistant").write(f"Here is the SQL query:\n{sql_query}\n")
+
+            elif option == "Report Generation":
+                sql_query = model(prompt, st.session_state.data, st.session_state.client)
+                clean_query = generate_query(sql_query)
+                try:
+                    df, raw_data, columns = execute_query_report(clean_query, st.session_state.conn)
+                    st.dataframe(df)
+                    with st.expander("View Raw Data"):
+                        st.write(raw_data)
+                    st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df})
+                except Exception as e:
+                    error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{clean_query}\n```"
+                    st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
+                    st.chat_message("assistant").write(error_message)
+                    
+            elif option == "Chart Generation":
+                pass
 if __name__ == "__main__":
     main()
