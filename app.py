@@ -5,6 +5,9 @@ import os
 from dotenv import load_dotenv
 import json
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import re
 load_dotenv() 
 
 def create_connection():
@@ -183,13 +186,90 @@ def execute_query_report(query, conn):
     
     return df, raw_data, columns
 
-def execute_query_chart(query, conn):
-    """Gera um gráfico a partir de uma query SQL."""
-    pass
+def execute_query_chart(df, prompt, client):
+    """
+    Executa uma query SQL, busca os dados e gera uma visualização com Plotly.
+    
+    Args:
+        query (str): A consulta SQL a ser executada
+        conn: Conexão com o banco de dados
+        prompt (str): A pergunta original do usuário
+        client: Cliente para acessar o modelo de linguagem
+    """        
+    
+    # Obter sugestão de visualização do modelo
+    visualization_prompt = f"""
+    Dados: {df.to_dict(orient='records')[:10]}
+    Colunas: {df.columns.tolist()}
+    Tipos de dados: {df.dtypes.to_dict()}
+    Pergunta original: {prompt}
+    
+    Create a Python code using Plotly that is the best visualization for this data considering the original question.
+    The code should use only plotly.express or plotly.graph_objects and should be complete, ready for execution.
+    Return only the Python code to create a chart, without explanations, and without imports.
+    Also is important to consider that the data is already in the DataFrame 'df'.
+    if you use plotly.express, you can use the alias 'px' and if you use plotly.graph_objects, you can use the alias 'go'.
+    """
+    
+    visualization_code = client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": "You are a specialized data analyst, and you need to create a visualization using Plotly."},
+            {"role": "user", "content": visualization_prompt}
+        ],
+        model="llama-3.3-70b-versatile",
+        temperature=0.2,
+        max_completion_tokens=1024
+    ).choices[0].message.content
+    
+    code = extract_python_code(visualization_code)
+
+
+    with st.expander("Código da Visualização"):
+        st.code(code, language="python")
+    
+    local_vars = {"df": df, "px": px, "go": go}
+    
+    try:
+        exec(code, local_vars)
+
+        # Executar o código gerado
+        fig = local_vars["fig"]
+
+        return fig
+    
+    except Exception as e:
+        st.error(f"Erro ao executar o código de visualização: {str(e)}")
+
+
+def extract_python_code(text):
+    """
+    Extracts Python code from a text block.
+
+    Args:
+        text (str): Text block containing Python code
+    """
+
+    python_blocks = re.findall(r'```(?:python)?\s*([\s\S]*?)```', text)
+    
+    if python_blocks:
+        return python_blocks[0].strip()
+    
+    return text.strip()
 
 def process_command(command, option):
-    """Process special commands that start with /"""
+    """
+    Process special commands that start with a slash (/).
+    The available commands are:
+    - /help: Display help message
+    - /explain: Explain how to use the app
+    - /reset: Reset the conversation history
+    - /tables: List the tables and columns in the database
 
+    Args:
+        command (str): The command to process
+        option (str): The current option selected by the user
+    """
+    
     if command == "/explain":
         # TODO: Parte do /explain que explica os resultados anteriores 
         if option in ["Report Generation", "Chart Generation"]:
@@ -302,6 +382,10 @@ def main():
             st.dataframe(msg["raw_data"])
             with st.expander("View Raw Data"):
                 st.write(msg["content"])
+        elif "chart" in msg:
+            st.plotly_chart(msg["chart"])
+            with st.expander("View Raw Data"):
+                st.write(msg["content"])
         else:
             content = msg["content"]
             if msg["role"] == "user" and content.startswith("/"):
@@ -354,13 +438,46 @@ def main():
                             st.dataframe(df)
                             with st.expander("View Raw Data"):
                                 st.write(raw_data)
-                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df})
+                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df, "prompt": prompt})
                     except Exception as e:
                         error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{clean_query}\n```"
                         st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
                         st.chat_message("assistant").write(error_message)
                     
             elif option == "Chart Generation":
-                pass
+                sql_query = model(prompt, st.session_state.data, st.session_state.client)
+                clean_query = generate_query(sql_query)
+                if not clean_query:
+                    error_message = "Error generating SQL query. Please ask a different question."
+                    st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
+                    st.chat_message("assistant").write(error_message)
+                else:
+                    try:
+                        df, raw_data, columns = execute_query_report(clean_query, st.session_state.conn)
+                        if df.empty:
+                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": "No results found. Please try a different question."})
+                            st.chat_message("assistant").write("No results found. Please try a different question.")
+                        else:
+
+                            try:
+                            # Executar a consulta e gerar o gráfico
+                                fig = execute_query_chart(df, prompt, st.session_state.client)
+
+                            # Adicionar o gráfico ao Streamlit
+                                st.plotly_chart(fig)
+                                st.expander("View Raw Data").write(raw_data)
+                            
+                            # Adicionar mensagem de sucesso ao histórico
+                                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "data": df, "chart": fig, "prompt": prompt})
+                            except Exception as e:
+                                error_message = f"Erro ao executar a consulta ou gerar o gráfico: {str(e)}\n\nConsulta gerada:\n```sql\n{clean_query}\n```"
+                                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
+                                st.chat_message("assistant").write(error_message)
+
+                    except Exception as e:
+                        error_message = f"Erro ao executar a consulta ou gerar o gráfico: {str(e)}\n\nConsulta gerada:\n```sql\n{clean_query}\n```"
+                        st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
+                        st.chat_message("assistant").write(error_message)
+                        
 if __name__ == "__main__":
     main()
