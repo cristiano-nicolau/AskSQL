@@ -222,14 +222,25 @@ def execute_query_chart(df, prompt, client):
     visualization_code = model_chart(df, prompt, client)
     
     code = extract_python_code(visualization_code)
+    code = code.replace("fig.show()", "")  # Remove fig.show() if it exists
     
-    local_vars = {"df": df, "px": px, "go": go}
+    local_vars = {
+        "df": df, 
+        "px": px, 
+        "go": go, 
+        "chart": None,   # Predeclare a chart variable
+        "fig": None      # Predeclare a fig variable
+    }
     
     try:
         exec(code, local_vars)
 
-        fig = local_vars["fig"]
+        fig = local_vars.get("fig") or local_vars.get("chart")
 
+        if fig is None:
+            st.toast("No chart or figure was generated. Please check the visualization code.  \n /code command can be used to see the code.")
+            return None, code
+        
         return fig, code
     
     except Exception as e:
@@ -413,7 +424,7 @@ def main():
             with st.expander("View Raw Data"):
                 st.write(msg["content"])
         elif "chart" in msg:
-            st.plotly_chart(msg["chart"])
+            st.plotly_chart(msg["chart"], use_container_width=True)
             with st.expander("View Raw Data"):
                 st.write(msg["content"])
         else:
@@ -492,7 +503,7 @@ def main():
                             try:
                                 fig, code = execute_query_chart(df, prompt, st.session_state.client)
 
-                                st.plotly_chart(fig)
+                                st.plotly_chart(fig, use_container_width=True)
                                 st.expander("View Raw Data").write(raw_data)
                             
                                 st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "data": df, "chart": fig, "prompt": prompt, "code": code, "sql_query": clean_query})
