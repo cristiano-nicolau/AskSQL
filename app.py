@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import re
+import random
 load_dotenv() 
 
 def create_connection():
@@ -479,7 +480,7 @@ def main():
             with st.expander("View Raw Data"):
                 st.write(msg["content"])
         elif "chart" in msg:
-            st.plotly_chart(msg["chart"], use_container_width=True)
+            st.plotly_chart(msg["chart"], use_container_width=True, key=msg["unique_id"])
             with st.expander("View Raw Data"):
                 st.write(msg["content"])
         else:
@@ -558,11 +559,11 @@ def main():
 
                             try:
                                 fig, code = execute_query_chart(df, prompt, st.session_state.client)
-
-                                st.plotly_chart(fig, use_container_width=True)
+                                unique_id = f"chart-{random.randint(0, 1000000)}"
+                                st.plotly_chart(fig, use_container_width=True, key=unique_id)
                                 st.expander("View Raw Data").write(raw_data)
                             
-                                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df, "chart": fig, "prompt": prompt, "code": code, "sql_query": clean_query})
+                                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df, "chart": fig, "prompt": prompt, "code": code, "sql_query": clean_query, "unique_id": unique_id})
                             except Exception as e:
                                 error_message = f"Erro ao executar a consulta ou gerar o gráfico: {str(e)}\n\nConsulta gerada:\n```sql\n{clean_query}\n```"
                                 st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
