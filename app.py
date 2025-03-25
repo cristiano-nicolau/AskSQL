@@ -141,6 +141,7 @@ def model(query, data, client):
 
     return chat_completion.choices[0].message.content
 
+
 def generate_query(msg):
     """Gera a query SQL a partir de uma pergunta em linguagem natural."""
     query = ""
@@ -186,23 +187,15 @@ def execute_query_report(query, conn):
     
     return df, raw_data, columns
 
-def execute_query_chart(df, prompt, client):
-    """
-    Executa uma query SQL, busca os dados e gera uma visualização com Plotly.
-    
-    Args:
-        query (str): A consulta SQL a ser executada
-        conn: Conexão com o banco de dados
-        prompt (str): A pergunta original do usuário
-        client: Cliente para acessar o modelo de linguagem
-    """        
-    
-    # Obter sugestão de visualização do modelo
+
+def model_chart(df, prompt, client):
+    """Gera a query SQL a partir de uma pergunta em linguagem natural."""
+ # Obter sugestão de visualização do modelo
     visualization_prompt = f"""
-    Dados: {df.to_dict(orient='records')[:10]}
-    Colunas: {df.columns.tolist()}
-    Tipos de dados: {df.dtypes.to_dict()}
-    Pergunta original: {prompt}
+    Data: {df.to_dict(orient='records')[:10]}
+    Colums: {df.columns.tolist()}
+    Data Types: {df.dtypes.to_dict()}
+    Inicial Prompt: {prompt}
     
     Create a Python code using Plotly that is the best visualization for this data considering the original question.
     The code should use only plotly.express or plotly.graph_objects and should be complete, ready for execution.
@@ -211,7 +204,7 @@ def execute_query_chart(df, prompt, client):
     if you use plotly.express, you can use the alias 'px' and if you use plotly.graph_objects, you can use the alias 'go'.
     """
     
-    visualization_code = client.chat.completions.create(
+    chat_completion = client.chat.completions.create(
         messages=[
             {"role": "system", "content": "You are a specialized data analyst, and you need to create a visualization using Plotly."},
             {"role": "user", "content": visualization_prompt}
@@ -219,23 +212,25 @@ def execute_query_chart(df, prompt, client):
         model="llama-3.3-70b-versatile",
         temperature=0.2,
         max_completion_tokens=1024
-    ).choices[0].message.content
+    )
+
+    return chat_completion.choices[0].message.content
+
+
+
+def execute_query_chart(df, prompt, client):
+    visualization_code = model_chart(df, prompt, client)
     
     code = extract_python_code(visualization_code)
-
-
-    with st.expander("Código da Visualização"):
-        st.code(code, language="python")
     
     local_vars = {"df": df, "px": px, "go": go}
     
     try:
         exec(code, local_vars)
 
-        # Executar o código gerado
         fig = local_vars["fig"]
 
-        return fig
+        return fig, code
     
     except Exception as e:
         st.error(f"Erro ao executar o código de visualização: {str(e)}")
@@ -264,6 +259,8 @@ def process_command(command, option):
     - /explain: Explain how to use the app
     - /reset: Reset the conversation history
     - /tables: List the tables and columns in the database
+    - /sql: Show the SQL query generated from the user's question
+    - /chart: Show the chart generated from the user's question
 
     Args:
         command (str): The command to process
@@ -302,12 +299,43 @@ def process_command(command, option):
             "role": "assistant", 
             "content": f"**Database Schema**\n\n{tables_info}"
         }
+    
+    elif command == "/sql":
+        if option in ["Report Generation", "Chart Generation"]:
+            for msg in reversed(st.session_state[f"messages_{option}"]):
+                if "sql_query" in msg:
+                    return {
+                        "role": "assistant", 
+                        "content": f"Here is the SQL query:\n ```sql\n{msg['sql_query']}\n```"
+                    }
+        else:
+            return {
+                "role": "assistant", 
+                "content": "The /sql command is only available in Report Generation and Chart Generation modes."
+            }
         
+    elif command == "/chart":
+        if option == "Chart Generation":
+            for msg in reversed(st.session_state[f"messages_{option}"]):
+                if "code" in msg:
+                    return {
+                        "role": "assistant", 
+                        "content": f"Here is the Python code to generate the chart:\n ```python\n{msg['code']}\n```"
+                    }
+        else:
+            return {
+                "role": "assistant", 
+                "content": "The /chart command is only available in Chart Generation mode."
+            }
+
     else:
         available_commands = "Available commands:\n\n"
         if option in ["Report Generation", "Chart Generation"]:
-            available_commands += "- **/explain <your prompt>**: Get explanation about the app and how to use it.\n"
+            available_commands += "- **/explain <your prompt>**: Get explanation about the app and how to use it.\n- **/sql**: Show the SQL query generated from the user's question.\n"
         
+        if option == "Chart Generation":
+            available_commands += "- **/chart**: Show the chart code generated from the user's question.\n"
+
         available_commands += "- **/help**: Display this help message.\n- **/reset**: Reset the conversation history. \n- **/tables**: List the tables and columns in the database.\n"
         
         return {
@@ -363,6 +391,8 @@ def main():
                 - **/help**: Display this help message.
                 - **/reset**: Reset the conversation history.
                 - **/tables**: List the tables and columns in the database.
+                - **/sql**: Show the SQL query generated from the user's question.
+                - **/chart**: Show the chart code generated from the user's question.
             """)
 
     st.markdown("""
@@ -438,7 +468,7 @@ def main():
                             st.dataframe(df)
                             with st.expander("View Raw Data"):
                                 st.write(raw_data)
-                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df, "prompt": prompt})
+                            st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "raw_data": df, "prompt": prompt, "sql_query": clean_query})
                     except Exception as e:
                         error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{clean_query}\n```"
                         st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
@@ -460,15 +490,12 @@ def main():
                         else:
 
                             try:
-                            # Executar a consulta e gerar o gráfico
-                                fig = execute_query_chart(df, prompt, st.session_state.client)
+                                fig, code = execute_query_chart(df, prompt, st.session_state.client)
 
-                            # Adicionar o gráfico ao Streamlit
                                 st.plotly_chart(fig)
                                 st.expander("View Raw Data").write(raw_data)
                             
-                            # Adicionar mensagem de sucesso ao histórico
-                                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "data": df, "chart": fig, "prompt": prompt})
+                                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": raw_data, "data": df, "chart": fig, "prompt": prompt, "code": code, "sql_query": clean_query})
                             except Exception as e:
                                 error_message = f"Erro ao executar a consulta ou gerar o gráfico: {str(e)}\n\nConsulta gerada:\n```sql\n{clean_query}\n```"
                                 st.session_state[f"messages_{option}"].append({"role": "assistant", "content": error_message})
