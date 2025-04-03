@@ -1,12 +1,16 @@
 # TODO: 
-[ ] explain the previous results, adicionar um /explain para explicar o resultado no caso do report
+[X] explain the previous results, adicionar um /explain para explicar o resultado no caso do report
 [X] para isso é preciso guardar a query e o resultado
 [X] adicionar um /reset para limpar a conversa 
 [X] adicionar um /help para mostrar as opções 
 [X] add the option to generate a chart, usa o groq para gerar o codigo, e depois dá display
 
 
+[ ] adicionar um /report para gerar o relatório, com os resultado das queries
+[ ] adicionar um /refactor em que a ideia é quando temos um erro ele pega no comando anterior e nos dizemos olha muda isto e aquilo
+
 
 
 # NOTE:
 [ ] Adicionar no relatório a explicação das tags, e o que elas significam
+[ ] Testes
