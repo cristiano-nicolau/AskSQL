@@ -3,3 +3,7 @@ groq
 dotenv
 streamlit
 plotly
+pyyaml
+pandas
+numpy
+tabulate

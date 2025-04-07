@@ -1,252 +1,421 @@
 ## AdventureWorks SQL Questions
 ## This file contains SQL questions and answers for the AdventureWorks database.
 ## The questions are divided into three categories: Easy, Medium, and Hard. 
-## You can encounter these questions in https://github.com/keilorg/sqlzoo-solutions/
+## Easy questions are simple SELECT statements, while Medium and Hard questions involve JOINs, GROUP BY, and other SQL concepts.
+## The questions are designed to test your SQL skills and help you practice writing SQL queries.
+## You can find these questions in https://learnsql.com/blog/sql-practice-for-beginners-adventureworks-exercises/?utm_source=social&utm_medium=linkedin&utm_campaign=li_post
+
+## Q - is the number of the question
+## Q-AdvW - is the question text
+## R-AdvW - is the response of my application - AskSQL
+## S-AdvW - is the solution response from the reference link
+
+Grade_type:
+    - Equal: The result sets contain exactly the same data, regardless of column names.
+    - Correct+: The submitted query returns all data from the reference query plus additional information.
+    - Correct-: The submitted query returns similar data but with differences in naming, column order, or presentation.
+    - Incorrect: The submitted query returns completely different data compared to the reference query.
 
 Question:
   Q1:
-    Q-AdvW: Show the first name and the email address of customer with CompanyName 'Bike World'
+    Q-AdvW: Select the job title of all male employees who are not married.
     R-AdvW: |
+      SELECT JobTitle
+      FROM HumanResources.Employee
+      WHERE Gender = 'M' AND MaritalStatus = 'S';
     S-AdvW: |
-      SELECT firstname, emailaddress
-      FROM Customer
-      WHERE companyname = 'Bike World';
+      SELECT JobTitle
+      FROM HumanResources.Employee
+      WHERE Gender = 'M'
+      AND MaritalStatus != 'M';
   Q2:
-    Q-AdvW: Show the CompanyName for all customers with an address in City 'Dallas'
+    Q-AdvW: Select the BusinessEntityID, Rate, and RateChangeDate for all employees whose pay rate has ever been 50 or more.
     R-AdvW: |
+      SELECT 
+        e.BusinessEntityID, 
+        e.NationalIDNumber, 
+        e.LoginID, 
+        e.JobTitle, 
+        eph.Rate, 
+        eph.RateChangeDate
+      FROM 
+          HumanResources.Employee e
+      JOIN 
+          HumanResources.EmployeePayHistory eph ON e.BusinessEntityID = eph.BusinessEntityID
+      WHERE 
+          eph.Rate >= 50
+      ORDER BY 
+          e.BusinessEntityID, 
+          eph.RateChangeDate DESC;
     S-AdvW: |
-      SELECT companyname
-      FROM Customer c JOIN CustomerAddress ca ON c.customerid = ca.customerid
-      JOIN Address a ON ca.addressid = a.addressid
-      WHERE city = 'Dallas';
+      SELECT BusinessEntityID, Rate, RateChangeDate
+      FROM HumanResources.EmployeePayHistory
+      WHERE Rate >= 50;
 
   Q3:
-    Q-AdvW: Show the CompanyName for all customers with an address in City 'Dallas' and StateProvince 'Texas'
+    Q-AdvW: Select the BusinessEntityID, DepartmentID, and StartDate for each employee who started working in any department in 2008.
     R-AdvW: |
+      SELECT 
+          BusinessEntityID,
+          DepartmentID,
+          StartDate
+      FROM 
+          HumanResources.EmployeeDepartmentHistory
+      WHERE 
+          YEAR(StartDate) = 2008;
     S-AdvW: |
-      SELECT companyname
-      FROM Customer c JOIN CustomerAddress ca ON c.customerid = ca.customerid
-      JOIN Address a ON ca.addressid = a.addressid
-      WHERE city = 'Dallas' AND stateprovince = 'Texas';
+      SELECT BusinessEntityID, DepartmentID, StartDate
+      FROM HumanResources.EmployeeDepartmentHistory
+      WHERE StartDate BETWEEN '2008-01-01' AND '2008-12-31';
 
   Q4:
-    Q-AdvW:  Give the CompanyName of those customers with orders over $100000. Include the subtotal plus tax plus freight.
+    Q-AdvW: Select the department IDs, names, and group names for all departments whose name starts with ‘Prod’ OR for all departments whose group name ends with ‘ring’.
     R-AdvW: |
+      SELECT DepartmentID, Name, GroupName 
+      FROM HumanResources.Department 
+      WHERE Name LIKE 'Prod%' OR GroupName LIKE '%ring';
     S-AdvW: |
-      SELECT companyname
-      FROM Customer c JOIN SalesOrderHeader sh ON c.customerid = sh.customerid
-      WHERE subtotal + taxamt + freight > 100000;
-
+      SELECT DepartmentID, Name, GroupName
+      FROM HumanResources.Department
+      WHERE Name LIKE 'Prod%'
+      OR GroupName LIKE '%ring';
   Q5:
-    Q-AdvW: Find the number of left racing socks ('Racing Socks, L') ordered by CompanyName 'Riding Cycles'
+    Q-AdvW: Select department names that belong to either the ‘Research and Development’ group or the ‘Manufacturing’ group.
     R-AdvW: |
+      SELECT Name
+      FROM HumanResources.Department
+      WHERE GroupName IN ('Research and Development', 'Manufacturing');
     S-AdvW: |
-      SELECT SUM(orderqty) total
-      FROM Product p JOIN SalesOrderDetail sd ON p.productid = sd.productid
-      JOIN SalesOrderHeader sh ON sd.salesorderid = sh.salesorderid
-      JOIN Customer c ON sh.customerid = c.customerid
-      WHERE (Name = 'Racing Socks, L') AND (companyname = 'Riding Cycles');
-
+      SELECT Name
+      FROM HumanResources.Department
+      WHERE GroupName IN ('Research and Development', 'Manufacturing');
   Q6:
-    Q-AdvW:  Single Item Order - is a customer order where only one item is ordered. Show the SalesOrderID and the UnitPrice for every Single Item Order.
+    Q-AdvW: Select employees’ IDs with all the names of the departments where they have ever worked.
     R-AdvW: |
+      SELECT 
+          E.BusinessEntityID AS EmployeeID,
+          STRING_AGG(D.Name, ', ') AS DepartmentNames
+      FROM 
+          HumanResources.Employee E
+      JOIN 
+          HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID
+      JOIN 
+          HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID
+      GROUP BY 
+          E.BusinessEntityID
+      ORDER BY 
+          E.BusinessEntityID;
     S-AdvW: |
-      WITH temp1 AS (
-        SELECT salesorderid, SUM(orderqty) items
-        FROM SalesOrderDetail
-        GROUP BY salesorderid
-        HAVING items = 1
-      )
-      SELECT salesorderid, unitprice
-      FROM SalesOrderDetail
-      WHERE salesorderid IN (SELECT salesorderid FROM temp1);
-
+      SELECT edh.BusinessEntityID, d.Name
+      FROM HumanResources.EmployeeDepartmentHistory AS edh
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID;
   Q7:
-    Q-AdvW: List the product name and the CompanyName for all Customers who ordered ProductModel 'Racing Socks'.
+    Q-AdvW: Select the employee ID and job title along with the dates when the employee changed departments (StartDate) for all female employees.
     R-AdvW: |
+      SELECT 
+          e.BusinessEntityID AS EmployeeID,
+          e.JobTitle,
+          edh.StartDate
+      FROM 
+          HumanResources.Employee e
+      INNER JOIN 
+          HumanResources.EmployeeDepartmentHistory edh ON e.BusinessEntityID = edh.BusinessEntityID
+      WHERE 
+          e.Gender = 'F';
     S-AdvW: |
-      SELECT p.name, companyname
-      FROM Customer c JOIN SalesOrderHeader sh ON c.customerid = sh.customerid
-      JOIN SalesOrderDetail sd ON sh.salesorderid = sd.salesorderid
-      JOIN Product p ON sd.productid = p.productid
-      JOIN ProductModel pm ON p.productmodelid = pm.productmodelid
-      WHERE pm.name = 'Racing Socks';
+      SELECT e.BusinessEntityID, e.JobTitle, edh.StartDate
+      FROM HumanResources.Employee AS e
+      JOIN HumanResources.EmployeeDepartmentHistory AS edh
+      ON e.BusinessEntityID = edh.BusinessEntityID
+      WHERE e.Gender = 'F';
 
   Q8:
-    Q-AdvW: Show the product description for culture 'fr' for product with ProductID 736.
+    Q-AdvW: Select job titles and their corresponding department names to find all job titles that have ever been used in each department. Do not include multiples of the same job title.
     R-AdvW: |
+      SELECT DISTINCT 
+          E.JobTitle, 
+          D.Name AS DepartmentName
+      FROM 
+          HumanResources.Employee E
+      INNER JOIN 
+          HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID
+      INNER JOIN 
+          HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID
+      ORDER BY 
+          D.Name, 
+          E.JobTitle;
     S-AdvW: |
-      SELECT description
-      FROM Product p JOIN ProductModel pm ON p.productmodelid = pm.productmodelid
-      JOIN ProductModelProductDescription pmpd ON pm.productmodelid = pmpd.productmodelid
-      JOIN ProductDescription pd ON pmpd.productdescriptionid = pd.productdescriptionid
-      WHERE (productid = 736) AND (culture = 'fr');
-
+      SELECT DISTINCT e.JobTitle, d.Name
+      FROM HumanResources.Employee AS e
+      JOIN HumanResources.EmployeeDepartmentHistory AS edh
+      ON e.BusinessEntityID = edh.BusinessEntityID
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID;
   Q9:
-    Q-AdvW: Use the SubTotal value in SaleOrderHeader to list orders from the largest to the smallest. For each order show the CompanyName and the SubTotal and the total weight of the order.
+    Q-AdvW: Select distinct department names  and shift names (no duplicate pairs) that employees in each department work. Rename the department name to DepartmentName and shift name to ShiftName
     R-AdvW: |
+      SELECT DISTINCT 
+          D.Name AS DepartmentName,
+          S.Name AS ShiftName
+      FROM 
+          HumanResources.EmployeeDepartmentHistory EDH
+      INNER JOIN 
+          HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID
+      INNER JOIN 
+          HumanResources.Shift S ON EDH.ShiftID = S.ShiftID;
     S-AdvW: |
-      SELECT companyname, subtotal, SUM(orderqty * weight) weight
-      FROM SalesOrderHeader sh JOIN SalesOrderDetail sd ON sh.salesorderid = sd.salesorderid
-      JOIN Product p ON sd.productid = p.productid
-      JOIN Customer c ON sh.customerid = c.customerid
-      GROUP BY sh.salesorderid, companyname, subtotal
-      ORDER BY subtotal DESC;
+      SELECT DISTINCT d.Name AS DepartmentName, s.Name AS ShiftName
+      FROM HumanResources.EmployeeDepartmentHistory AS edh
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID
+      JOIN HumanResources.Shift AS s
+      ON edh.ShiftID = s.ShiftID;
 
   Q10:
-    Q-AdvW: How many products in ProductCategory 'Cranksets' have been sold to an address in 'London'?
+    Q-AdvW: Select employees’ IDs, department names, and shift names. Include only employees hired after 2010-01-01 and who work for departments within the Manufacturing and Quality Assurance groups.
     R-AdvW: |
+      SELECT 
+          E.BusinessEntityID AS EmployeeID,
+          D.Name AS DepartmentName,
+          S.Name AS ShiftName
+      FROM 
+          HumanResources.Employee E
+      INNER JOIN 
+          HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID
+      INNER JOIN 
+          HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID
+      INNER JOIN 
+          HumanResources.Shift S ON EDH.ShiftID = S.ShiftID
+      WHERE 
+          E.HireDate > '2010-01-01'
+          AND D.GroupName IN ('Manufacturing', 'Quality Assurance');
     S-AdvW: |
-      SELECT SUM(orderqty) total
-      FROM Address a JOIN SalesOrderHeader sh ON a.addressid = sh.billtoaddressid
-      JOIN SalesOrderDetail sd ON sh.salesorderid = sd.salesorderid
-      JOIN Product p ON sd.productid = p.productid
-      JOIN ProductCategory pc ON p.productcategoryid = pc.productcategoryid
-      WHERE (city = 'London') AND (pc.name = 'Cranksets');
-
+      SELECT e.BusinessEntityID, d.Name, s.Name
+      FROM HumanResources.Employee AS e
+      JOIN HumanResources.EmployeeDepartmentHistory AS edh
+      ON e.BusinessEntityID = edh.BusinessEntityID
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID
+      JOIN HumanResources.Shift AS s
+      ON edh.ShiftID = s.ShiftID
+      WHERE e.HireDate > '2010-01-01'
+      AND d.GroupName IN ('Manufacturing', 'Quality Assurance');
   Q11:
-    Q-AdvW: For every customer with a 'Main Office' in Dallas show AddressLine1 of the 'Main Office' and AddressLine1 of the 'Shipping' address. If there is no shipping address leave it blank. Use one row per customer.
+    Q-AdvW: Select the minimum and maximum number of sick leave hours taken by the employees.
     R-AdvW: |
+      SELECT 
+          MIN(SickLeaveHours) AS MinimumSickLeaveHours,
+          MAX(SickLeaveHours) AS MaximumSickLeaveHours
+      FROM 
+          HumanResources.Employee;
     S-AdvW: |
-      SELECT companyname,
-        MAX(CASE WHEN addresstype = 'Main Office' THEN addressline1 ELSE '' END) main_office,
-        MAX(CASE WHEN addresstype = 'Shipping' THEN addressline1 ELSE '' END) shipping
-      FROM CustomerAddress ca JOIN Address a ON ca.addressid = a.addressid
-      JOIN Customer c ON ca.customerid = c.customerid
-      WHERE city = 'Dallas'
-      GROUP BY companyname;
+      SELECT MIN(SickLeaveHours) AS MinSickLeaveHours,
+            MAX(SickLeaveHours) AS MaxSickLeaveHours
+      FROM HumanResources.Employee;
 
   Q12:
-    Q-AdvW: For each order show the SalesOrderID and SubTotal calculated three ways:
-      A) From the SalesOrderHeader
-      B) Sum of OrderQty*UnitPrice
-      C) Sum of OrderQty*ListPrice
+    Q-AdvW: Select the job titles and the average number of vacation hours per job title.
     R-AdvW: |
+      SELECT 
+          JobTitle, 
+          AVG(VacationHours) AS AverageVacationHours
+      FROM 
+          HumanResources.Employee
+      GROUP BY 
+          JobTitle;
     S-AdvW: |
-      WITH tempA AS (
-        SELECT salesorderid, subtotal A_total
-        FROM SalesOrderHeader
-      ), tempB AS (
-        SELECT salesorderid, SUM(orderqty * unitprice) B_total
-        FROM SalesOrderDetail
-        GROUP BY salesorderid
-      ), tempC AS (
-        SELECT salesorderid, SUM(orderqty * listprice) C_total
-        FROM SalesOrderDetail sd JOIN Product p ON sd.productid = p.productid
-        GROUP BY salesorderid
-      )
-      SELECT tempA.salesorderid, A_total, B_total, C_total
-      FROM tempA JOIN tempB ON tempA.salesorderid = tempB.salesorderid
-      JOIN tempC ON tempB.salesorderid = tempC.salesorderid;
+      SELECT JobTitle, AVG(VacationHours) AS AvgVacationHours
+      FROM HumanResources.Employee
+      GROUP BY JobTitle;
 
   Q13:
-    Q-AdvW: Show the best selling item by value.
+    Q-AdvW: Select the employees’ gender and the count of employees of each gender.
     R-AdvW: |
+      SELECT 
+          Gender, 
+          COUNT(BusinessEntityID) AS EmployeeCount
+      FROM 
+          HumanResources.Employee
+      GROUP BY 
+          Gender;
     S-AdvW: |
-      SELECT name, SUM(orderqty * unitprice) total_value
-      FROM SalesOrderDetail sd JOIN Product p ON sd.productid = p.productid
-      GROUP BY name
-      ORDER BY total_value DESC
-      LIMIT 1;
+      SELECT Gender, COUNT(*) AS Count
+      FROM HumanResources.Employee
+      GROUP BY Gender;
 
   Q14:
-    Q-AdvW: Show how many orders are in the following ranges (in $):
-      RANGE      Num Orders      Total Value
-      0-99
-      100-999
-      1000-9999
-      10000-
+    Q-AdvW: Find the count of departments in each department group. List only those department group names that have more than two departments.
     R-AdvW: |
+      SELECT 
+          D.GroupName, 
+          COUNT(D.DepartmentID) AS DepartmentCount
+      FROM 
+          HumanResources.Department D
+      GROUP BY 
+          D.GroupName
+      HAVING 
+          COUNT(D.DepartmentID) > 2;
     S-AdvW: |
-      WITH temp1 AS (
-        SELECT salesorderid, SUM(orderqty * unitprice) order_total
-        FROM SalesOrderDetail
-        GROUP BY salesorderid
-      ), temp2 AS (
-        SELECT salesorderid, order_total, CASE
-          WHEN order_total BETWEEN 0 AND 99 THEN '0-99'
-          WHEN order_total BETWEEN 100 AND 999 THEN '100-999'
-          WHEN order_total BETWEEN 1000 AND 9999 THEN '1000-9999'
-          WHEN order_total >= 10000 THEN '10000-'
-          ELSE 'Error'
-          END AS rng
-        FROM temp1
-      )
-      SELECT rng 'RANGE', COUNT(rng) 'Num Orders', SUM(order_total) 'Total Value'
-      FROM temp2
-      GROUP BY rng;
+      SELECT GroupName, COUNT(*) AS DepartmentsCount
+      FROM HumanResources.Department
+      GROUP BY GroupName
+      HAVING COUNT(*) > 2;
 
   Q15:
-    Q-AdvW: Identify the three most important cities. Show the break down of top level product category against city.
+    Q-AdvW: Select the department names and the sum of sick leave hours taken by employees working currently in each department. Rename this column to SumSickLeaveHours.
     R-AdvW: |
+      SELECT 
+          D.Name, 
+          SUM(E.SickLeaveHours) AS SumSickLeaveHours
+      FROM 
+          HumanResources.Employee E
+      INNER JOIN 
+          HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID
+      INNER JOIN 
+          HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID
+      WHERE 
+          EDH.EndDate IS NULL  -- This condition ensures we only consider current departments
+      GROUP BY 
+          D.Name
     S-AdvW: |
-      WITH temp1 AS (
-        SELECT city, SUM(unitprice * orderqty) AS total_sales
-        FROM SalesOrderDetail sd JOIN SalesOrderHeader sh ON sd.salesorderid = sh.salesorderid
-        JOIN Address a ON sh.shiptoaddressid = a.addressid
-        GROUP BY city
-        ORDER BY total_sales DESC
-        LIMIT 3
-      )
-      SELECT city, pc.name, SUM(unitprice * orderqty) total_sales
-      FROM SalesOrderDetail sd JOIN SalesOrderHeader sh ON sd.salesorderid = sh.salesorderid
-      JOIN Address a ON sh.shiptoaddressid = a.addressid
-      JOIN Product p ON sd.productid = p.productid
-      JOIN ProductCategory pc ON p.productcategoryid = pc.productcategoryid
-      WHERE city IN (SELECT city FROM temp1)
-      GROUP BY city, pc.name
-      ORDER BY city, total_sales DESC;
+      SELECT d.Name, SUM(e.SickLeaveHours) AS SumSickLeaveHours
+      FROM HumanResources.Employee AS e
+      JOIN HumanResources.EmployeeDepartmentHistory AS edh
+      ON e.BusinessEntityID = edh.BusinessEntityID
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID
+      WHERE edh.EndDate IS NULL
+      GROUP BY d.Name;
 
+   ########################################################
+   ########################################################
+   ########################################################
+   ########################################################   
+   ########################################################
+   
   Q16:
-    Q-AdvW:  List the SalesOrderNumber for the customers 'Good Toys' and 'Bike World'.
+    Q-AdvW:  Select employees’ IDs and their current pay rates.
     R-AdvW: |
+      WITH RankedPayHistory AS (
+          SELECT 
+              BusinessEntityID,
+              Rate,
+              ROW_NUMBER() OVER (PARTITION BY BusinessEntityID ORDER BY RateChangeDate DESC) AS RowNum
+          FROM 
+              HumanResources.EmployeePayHistory
+      )
+      SELECT 
+          E.BusinessEntityID AS EmployeeID,
+          RPH.Rate AS CurrentPayRate
+      FROM 
+          HumanResources.Employee E
+      INNER JOIN 
+          RankedPayHistory RPH ON E.BusinessEntityID = RPH.BusinessEntityID
+      WHERE 
+          RPH.RowNum = 1;
     S-AdvW: |
-      SELECT salesordernumber
-      FROM Customer c JOIN SalesOrderHeader sh ON c.customerid = sh.customerid
-      WHERE companyname LIKE '%Good Toys%' OR companyname LIKE '%Bike World%';
+      SELECT e.BusinessEntityID, e.Rate AS CurrentPayRate
+      FROM HumanResources.EmployeePayHistory AS e
+      WHERE e.RateChangeDate = (
+                  SELECT MAX(e2.RateChangeDate)
+                  FROM HumanResources.EmployeePayHistory AS e2
+                  WHERE e2.BusinessEntityID = e.BusinessEntityID
+              );
   Q17:
-    Q-AdvW:  List the CompanyName and SalesOrderID for the customers 'Good Toys' and 'Bike World'.
+    Q-AdvW: Select the minimum, average, and maximum pay rates from employees’ current pay rates.
     R-AdvW: |
+      SELECT 
+          MIN(Rate) AS MinimumPayRate,
+          AVG(Rate) AS AveragePayRate,
+          MAX(Rate) AS MaximumPayRate
+      FROM 
+          (
+          SELECT 
+              BusinessEntityID,
+              Rate,
+              ROW_NUMBER() OVER (PARTITION BY BusinessEntityID ORDER BY RateChangeDate DESC) AS RowNum
+          FROM 
+              HumanResources.EmployeePayHistory
+          ) AS CurrentPayRates
+      WHERE 
+          RowNum = 1;
     S-AdvW: |
-      SELECT companyname, salesorderid
-      FROM Customer c JOIN SalesOrderHeader sh ON c.customerid = sh.customerid
-      WHERE companyname LIKE '%Good Toys%' OR companyname LIKE '%Bike World%';
+      SELECT MIN(CurrentPayRate) AS MinPayRate,
+            AVG(CurrentPayRate) AS AvgPayRate,
+            MAX(CurrentPayRate) AS MaxPayRate
+      FROM (
+              SELECT e.BusinessEntityID, e.Rate AS CurrentPayRate
+              FROM HumanResources.EmployeePayHistory AS e
+              WHERE e.RateChangeDate = (
+                      SELECT MAX(e2.RateChangeDate)
+                      FROM HumanResources.EmployeePayHistory AS e2
+                      WHERE e2.BusinessEntityID = e.BusinessEntityID
+                  )
+      ) AS cpr;
   Q18:
-    Q-AdvW:  List the name and addresses of companies containing the word 'Bike' (upper or lower case) and companies containing 'cycle' (upper or lower case).
+    Q-AdvW: Select all employee IDs who took more than 60 hours of vacation or who took more than 60 hours of sick leave.
     R-AdvW: |
+      SELECT BusinessEntityID 
+      FROM HumanResources.Employee 
+      WHERE VacationHours > 60 OR SickLeaveHours > 60;
     S-AdvW: |
-      WITH temp1 AS (
-        (SELECT DISTINCT(companyname), customerid, IF(1, 'bike', '') tag
-        FROM Customer
-        WHERE companyname LIKE '%bike%'
-        ) UNION ALL (
-        SELECT DISTINCT(companyname), customerid, IF(1, 'cycle', '') tag
-        FROM Customer
-        WHERE companyname LIKE '%cycle%')
-      )
-      SELECT companyname, tag, ca.addressid, addressline1, addressline2, city, stateprovince, postalcode
-      FROM temp1 JOIN CustomerAddress ca ON temp1.customerid = ca.customerid
-      JOIN Address a ON ca.addressid = a.addressid
-      ORDER BY tag;
+      SELECT BusinessEntityID
+      FROM HumanResources.Employee
+      GROUP BY BusinessEntityID
+      HAVING SUM(VacationHours) > 60
+      
+      UNION
+      
+      SELECT BusinessEntityID
+      FROM HumanResources.Employee
+      GROUP BY BusinessEntityID
+      HAVING SUM(SickLeaveHours) > 60;
   Q19:
-    Q-AdvW:  Show the total order value for each CountryRegion.
-    List by value with the highest first.
+    Q-AdvW:  Select the IDs of employees who have the job titles ‘Sales Representative’ or ‘Tool Designer’ and who have worked (or are working) in the Sales or Marketing departments.List by value with the highest first.
     R-AdvW: |
+      SELECT E.BusinessEntityID
+      FROM HumanResources.Employee E
+      JOIN HumanResources.EmployeeDepartmentHistory EDH
+          ON E.BusinessEntityID = EDH.BusinessEntityID
+      JOIN HumanResources.Department D
+          ON EDH.DepartmentID = D.DepartmentID
+      WHERE E.JobTitle IN ('Sales Representative', 'Tool Designer')
+          AND D.Name IN ('Sales', 'Marketing')
+      ORDER BY E.BusinessEntityID DESC;
     S-AdvW: |
-      SELECT countyregion, SUM(subtotal) total
-      FROM Address a JOIN SalesOrderHeader sh ON a.addressid = sh.shiptoaddressid
-      GROUP BY countyregion;
+      SELECT e.BusinessEntityID
+      FROM HumanResources.Employee AS e
+      WHERE e.JobTitle IN ('Sales Representative', 'Tool Designer')
+      
+      INTERSECT
+      
+      SELECT edh.BusinessEntityID
+      FROM HumanResources.EmployeeDepartmentHistory AS edh
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID
+      WHERE d.Name IN ('Sales', 'Marketing');
   Q20:
-    Q-AdvW:  Find the best customer in each region.
+    Q-AdvW: Select the IDs, job titles, and department names for employees associated with Sales Representative or Marketing Manager roles.
     R-AdvW: |
+      SELECT 
+          e.BusinessEntityID AS ID,
+          e.JobTitle,
+          d.Name AS DepartmentName
+      FROM 
+          HumanResources.Employee e
+      INNER JOIN 
+          HumanResources.EmployeeDepartmentHistory edh ON e.BusinessEntityID = edh.BusinessEntityID
+      INNER JOIN 
+          HumanResources.Department d ON edh.DepartmentID = d.DepartmentID
+      WHERE 
+          e.JobTitle IN ('Sales Representative', 'Marketing Manager');
     S-AdvW: |
-      WITH temp1 AS (
-        SELECT countyregion, companyname, SUM(subtotal) total,
-          RANK() OVER (PARTITION BY countyregion ORDER BY total DESC) rnk
-        FROM Address a JOIN SalesOrderHeader sh ON a.addressid = sh.shiptoaddressid
-        JOIN Customer c ON sh.customerid = c.customerid
-        GROUP BY countyregion, companyname
-      )
-      SELECT countyregion, companyname, total
-      FROM temp1
-      WHERE rnk = 1;
+      SELECT e.BusinessEntityID, e.JobTitle, d.Name AS DepartmentName
+      FROM HumanResources.Employee AS e
+      JOIN HumanResources.EmployeeDepartmentHistory AS edh
+      ON e.BusinessEntityID = edh.BusinessEntityID
+      JOIN HumanResources.Department AS d
+      ON edh.DepartmentID = d.DepartmentID
+      WHERE e.JobTitle IN ('Sales Representative', 'Marketing Manager');
+

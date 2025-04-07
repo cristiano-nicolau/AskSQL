@@ -90,7 +90,14 @@ def get_tables(conn):
 
 def model(query, data, client):
     """Gera a query SQL a partir de uma pergunta em linguagem natural."""
-
+    # se a data tiver mais de 6000 palavras , tira o tipo de dados
+    # If the data has more than 6000 words, remove the data types to simplify the schema
+    data_str = json.dumps(data)
+    if len(data_str.split()) > 1000:
+        print(len(data_str.split()))
+        for table, info in data.items():
+            data[table]["columns"] = [(col, "") for col, dtype in info["columns"]]
+    print(json.dumps(data, indent=4))   
     chat_completion = client.chat.completions.create(
         #
         # Required parameters
@@ -445,8 +452,9 @@ def main():
         # put hear the data from the database
         for table, info in st.session_state.data.items():
             st.subheader(table)
-            for col, dtype in info["columns"]:
-                st.write(f"- {col} ({dtype})")
+            if "columns" in info:
+                for col, dtype in info["columns"]:
+                    st.write(f"- {col} ({dtype})")
             for fk in info["foreign_keys"]:
                 st.write(f"- FOREIGN KEY ({fk['column']}) REFERENCES {fk['references']}")
             st.write("---")

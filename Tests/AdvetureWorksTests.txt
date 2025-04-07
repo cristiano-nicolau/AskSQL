@@ -1,0 +1,552 @@
+
+Evaluating Q1...
+Question: Select the job title of all male employees who are not married.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+-------------------------+
+|    | JobTitle                |
+|----+-------------------------|
+|  0 | Chief Executive Officer |
+|  1 | Senior Tool Designer    |
+|  2 | Senior Tool Designer    |
+|  3 | Senior Design Engineer  |
+|  4 | Marketing Manager       |
++----+-------------------------+
+Total rows: 109, Columns: 1
+
+Submitted Query Result:
++----+-------------------------+
+|    | JobTitle                |
+|----+-------------------------|
+|  0 | Chief Executive Officer |
+|  1 | Senior Tool Designer    |
+|  2 | Senior Tool Designer    |
+|  3 | Senior Design Engineer  |
+|  4 | Marketing Manager       |
++----+-------------------------+
+Total rows: 109, Columns: 1
+
+Evaluating Q2...
+Question: Select the BusinessEntityID, Rate, and RateChangeDate for all employees whose pay rate has ever been 50 or more.
+Grade: Correct+
+Reason: The answer contains all expected data plus additional information.
+
+Reference Query Result:
++----+--------------------+----------+---------------------+
+|    |   BusinessEntityID |     Rate | RateChangeDate      |
+|----+--------------------+----------+---------------------|
+|  0 |                  1 | 125.5    | 2003-02-15 00:00:00 |
+|  1 |                  2 |  63.4615 | 2002-03-03 00:00:00 |
+|  2 |                  7 |  50.4808 | 2003-03-12 00:00:00 |
+|  3 |                 25 |  84.1346 | 2003-03-07 00:00:00 |
+|  4 |                234 |  60.0962 | 2006-03-01 00:00:00 |
++----+--------------------+----------+---------------------+
+Total rows: 7, Columns: 3
+
+Submitted Query Result:
++----+--------------------+--------------------+------------------------+----------------------------------+----------+---------------------+
+|    |   BusinessEntityID |   NationalIDNumber | LoginID                | JobTitle                         |     Rate | RateChangeDate      |
+|----+--------------------+--------------------+------------------------+----------------------------------+----------+---------------------|
+|  0 |                  1 |          295847284 | adventure-works\ken0   | Chief Executive Officer          | 125.5    | 2003-02-15 00:00:00 |
+|  1 |                  2 |          245797967 | adventure-works\terri0 | Vice President of Engineering    |  63.4615 | 2002-03-03 00:00:00 |
+|  2 |                  7 |          134969118 | adventure-works\dylan0 | Research and Development Manager |  50.4808 | 2003-03-12 00:00:00 |
+|  3 |                 25 |          519899904 | adventure-works\james1 | Vice President of Production     |  84.1346 | 2003-03-07 00:00:00 |
+|  4 |                234 |          184188301 | adventure-works\laura1 | Chief Financial Officer          |  60.0962 | 2006-03-01 00:00:00 |
++----+--------------------+--------------------+------------------------+----------------------------------+----------+---------------------+
+Total rows: 7, Columns: 6
+
+Evaluating Q3...
+Question: Select the BusinessEntityID, DepartmentID, and StartDate for each employee who started working in any department in 2008.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++--------------------+----------------+-------------+
+| BusinessEntityID   | DepartmentID   | StartDate   |
+|--------------------+----------------+-------------|
++--------------------+----------------+-------------+
+Total rows: 0, Columns: 3
+
+Submitted Query Result:
++--------------------+----------------+-------------+
+| BusinessEntityID   | DepartmentID   | StartDate   |
+|--------------------+----------------+-------------|
++--------------------+----------------+-------------+
+Total rows: 0, Columns: 3
+
+Evaluating Q4...
+Question: Select the department IDs, names, and group names for all departments whose name starts with ‘Prod’ OR for all departments whose group name ends with ‘ring’.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+----------------+--------------------+---------------+
+|    |   DepartmentID | Name               | GroupName     |
+|----+----------------+--------------------+---------------|
+|  0 |              7 | Production         | Manufacturing |
+|  1 |              8 | Production Control | Manufacturing |
++----+----------------+--------------------+---------------+
+Total rows: 2, Columns: 3
+
+Submitted Query Result:
++----+----------------+--------------------+---------------+
+|    |   DepartmentID | Name               | GroupName     |
+|----+----------------+--------------------+---------------|
+|  0 |              7 | Production         | Manufacturing |
+|  1 |              8 | Production Control | Manufacturing |
++----+----------------+--------------------+---------------+
+Total rows: 2, Columns: 3
+
+Evaluating Q5...
+Question: Select department names that belong to either the ‘Research and Development’ group or the ‘Manufacturing’ group.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+--------------------------+
+|    | Name                     |
+|----+--------------------------|
+|  0 | Engineering              |
+|  1 | Tool Design              |
+|  2 | Research and Development |
+|  3 | Production               |
+|  4 | Production Control       |
++----+--------------------------+
+Total rows: 5, Columns: 1
+
+Submitted Query Result:
++----+--------------------------+
+|    | Name                     |
+|----+--------------------------|
+|  0 | Engineering              |
+|  1 | Tool Design              |
+|  2 | Research and Development |
+|  3 | Production               |
+|  4 | Production Control       |
++----+--------------------------+
+Total rows: 5, Columns: 1
+
+Evaluating Q6...
+Question: Select employees’ IDs with all the names of the departments where they have ever worked.
+Grade: Correct-
+Reason: The answer contains similar data to the expected result but presented differently.
+
+Reference Query Result:
++----+--------------------+------------------+
+|    |   BusinessEntityID | Name             |
+|----+--------------------+------------------|
+|  0 |                217 | Document Control |
+|  1 |                218 | Document Control |
+|  2 |                219 | Document Control |
+|  3 |                220 | Document Control |
+|  4 |                221 | Document Control |
++----+--------------------+------------------+
+Total rows: 296, Columns: 2
+
+Submitted Query Result:
++----+--------------+--------------------------+
+|    |   EmployeeID | DepartmentNames          |
+|----+--------------+--------------------------|
+|  0 |            1 | Executive                |
+|  1 |            2 | Engineering              |
+|  2 |            3 | Engineering              |
+|  3 |            4 | Engineering, Tool Design |
+|  4 |            5 | Engineering              |
++----+--------------+--------------------------+
+Total rows: 290, Columns: 2
+
+Evaluating Q7...
+Question: Select the employee ID and job title along with the dates when the employee changed departments (StartDate) for all female employees.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------------+-----------------------------------+-------------+
+|    |   BusinessEntityID | JobTitle                          | StartDate   |
+|----+--------------------+-----------------------------------+-------------|
+|  0 |                  2 | Vice President of Engineering     | 2002-03-03  |
+|  1 |                  5 | Design Engineer                   | 2002-02-06  |
+|  2 |                  8 | Research and Development Engineer | 2003-01-30  |
+|  3 |                  9 | Research and Development Engineer | 2003-02-17  |
+|  4 |                 13 | Tool Designer                     | 2005-01-23  |
++----+--------------------+-----------------------------------+-------------+
+Total rows: 87, Columns: 3
+
+Submitted Query Result:
++----+--------------+-----------------------------------+-------------+
+|    |   EmployeeID | JobTitle                          | StartDate   |
+|----+--------------+-----------------------------------+-------------|
+|  0 |            2 | Vice President of Engineering     | 2002-03-03  |
+|  1 |            5 | Design Engineer                   | 2002-02-06  |
+|  2 |            8 | Research and Development Engineer | 2003-01-30  |
+|  3 |            9 | Research and Development Engineer | 2003-02-17  |
+|  4 |           13 | Tool Designer                     | 2005-01-23  |
++----+--------------+-----------------------------------+-------------+
+Total rows: 87, Columns: 3
+
+Evaluating Q8...
+Question: Select job titles and their corresponding department names to find all job titles that have ever been used in each department. Do not include multiples of the same job title.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------------------------+----------------------+
+|    | JobTitle                       | Name                 |
+|----+--------------------------------+----------------------|
+|  0 | Accountant                     | Finance              |
+|  1 | Accounts Manager               | Finance              |
+|  2 | Accounts Payable Specialist    | Finance              |
+|  3 | Accounts Receivable Specialist | Finance              |
+|  4 | Application Specialist         | Information Services |
++----+--------------------------------+----------------------+
+Total rows: 73, Columns: 2
+
+Submitted Query Result:
++----+----------------------------+------------------+
+|    | JobTitle                   | DepartmentName   |
+|----+----------------------------+------------------|
+|  0 | Control Specialist         | Document Control |
+|  1 | Document Control Assistant | Document Control |
+|  2 | Document Control Manager   | Document Control |
+|  3 | Design Engineer            | Engineering      |
+|  4 | Engineering Manager        | Engineering      |
++----+----------------------------+------------------+
+Total rows: 73, Columns: 2
+
+Evaluating Q9...
+Question: Select distinct department names  and shift names (no duplicate pairs) that employees in each department work. Rename the department name to DepartmentName and shift name to ShiftName
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+------------------+-------------+
+|    | DepartmentName   | ShiftName   |
+|----+------------------+-------------|
+|  0 | Document Control | Day         |
+|  1 | Document Control | Evening     |
+|  2 | Document Control | Night       |
+|  3 | Engineering      | Day         |
+|  4 | Executive        | Day         |
++----+------------------+-------------+
+Total rows: 29, Columns: 2
+
+Submitted Query Result:
++----+------------------+-------------+
+|    | DepartmentName   | ShiftName   |
+|----+------------------+-------------|
+|  0 | Document Control | Day         |
+|  1 | Document Control | Evening     |
+|  2 | Document Control | Night       |
+|  3 | Engineering      | Day         |
+|  4 | Executive        | Day         |
++----+------------------+-------------+
+Total rows: 29, Columns: 2
+
+Evaluating Q10...
+Question: Select employees’ IDs, department names, and shift names. Include only employees hired after 2010-01-01 and who work for departments within the Manufacturing and Quality Assurance groups.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++--------------------+--------+--------+
+| BusinessEntityID   | Name   | Name   |
+|--------------------+--------+--------|
++--------------------+--------+--------+
+Total rows: 0, Columns: 3
+
+Submitted Query Result:
++--------------+------------------+-------------+
+| EmployeeID   | DepartmentName   | ShiftName   |
+|--------------+------------------+-------------|
++--------------+------------------+-------------+
+Total rows: 0, Columns: 3
+
+Evaluating Q11...
+Question: Select the minimum and maximum number of sick leave hours taken by the employees.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+---------------------+---------------------+
+|    |   MinSickLeaveHours |   MaxSickLeaveHours |
+|----+---------------------+---------------------|
+|  0 |                  20 |                  80 |
++----+---------------------+---------------------+
+Total rows: 1, Columns: 2
+
+Submitted Query Result:
++----+-------------------------+-------------------------+
+|    |   MinimumSickLeaveHours |   MaximumSickLeaveHours |
+|----+-------------------------+-------------------------|
+|  0 |                      20 |                      80 |
++----+-------------------------+-------------------------+
+Total rows: 1, Columns: 2
+
+Evaluating Q12...
+Question: Select the job titles and the average number of vacation hours per job title.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------------------------+--------------------+
+|    | JobTitle                       |   AvgVacationHours |
+|----+--------------------------------+--------------------|
+|  0 | Accountant                     |                 58 |
+|  1 | Accounts Manager               |                 57 |
+|  2 | Accounts Payable Specialist    |                 63 |
+|  3 | Accounts Receivable Specialist |                 61 |
+|  4 | Application Specialist         |                 72 |
++----+--------------------------------+--------------------+
+Total rows: 67, Columns: 2
+
+Submitted Query Result:
++----+--------------------------------+------------------------+
+|    | JobTitle                       |   AverageVacationHours |
+|----+--------------------------------+------------------------|
+|  0 | Accountant                     |                     58 |
+|  1 | Accounts Manager               |                     57 |
+|  2 | Accounts Payable Specialist    |                     63 |
+|  3 | Accounts Receivable Specialist |                     61 |
+|  4 | Application Specialist         |                     72 |
++----+--------------------------------+------------------------+
+Total rows: 67, Columns: 2
+
+Evaluating Q13...
+Question: Select the employees’ gender and the count of employees of each gender.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+----------+---------+
+|    | Gender   |   Count |
+|----+----------+---------|
+|  0 | F        |      84 |
+|  1 | M        |     206 |
++----+----------+---------+
+Total rows: 2, Columns: 2
+
+Submitted Query Result:
++----+----------+-----------------+
+|    | Gender   |   EmployeeCount |
+|----+----------+-----------------|
+|  0 | F        |              84 |
+|  1 | M        |             206 |
++----+----------+-----------------+
+Total rows: 2, Columns: 2
+
+Evaluating Q14...
+Question: Find the count of departments in each department group. List only those department group names that have more than two departments.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------------------------------+--------------------+
+|    | GroupName                            |   DepartmentsCount |
+|----+--------------------------------------+--------------------|
+|  0 | Executive General and Administration |                  5 |
+|  1 | Research and Development             |                  3 |
++----+--------------------------------------+--------------------+
+Total rows: 2, Columns: 2
+
+Submitted Query Result:
++----+--------------------------------------+-------------------+
+|    | GroupName                            |   DepartmentCount |
+|----+--------------------------------------+-------------------|
+|  0 | Executive General and Administration |                 5 |
+|  1 | Research and Development             |                 3 |
++----+--------------------------------------+-------------------+
+Total rows: 2, Columns: 2
+
+Evaluating Q15...
+Question: Select the department names and the sum of sick leave hours taken by employees working currently in each department. Rename this column to SumSickLeaveHours.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+----------------------------+---------------------+
+|    | Name                       |   SumSickLeaveHours |
+|----+----------------------------+---------------------|
+|  0 | Document Control           |                 291 |
+|  1 | Engineering                |                 129 |
+|  2 | Executive                  |                  89 |
+|  3 | Facilities and Maintenance |                 450 |
+|  4 | Finance                    |                 495 |
++----+----------------------------+---------------------+
+Total rows: 16, Columns: 2
+
+Submitted Query Result:
++----+----------------------------+---------------------+
+|    | Name                       |   SumSickLeaveHours |
+|----+----------------------------+---------------------|
+|  0 | Document Control           |                 291 |
+|  1 | Engineering                |                 129 |
+|  2 | Executive                  |                  89 |
+|  3 | Facilities and Maintenance |                 450 |
+|  4 | Finance                    |                 495 |
++----+----------------------------+---------------------+
+Total rows: 16, Columns: 2
+
+Evaluating Q16...
+Question: Select employees’ IDs and their current pay rates.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------------+------------------+
+|    |   BusinessEntityID |   CurrentPayRate |
+|----+--------------------+------------------|
+|  0 |                290 |          23.0769 |
+|  1 |                289 |          23.0769 |
+|  2 |                288 |          23.0769 |
+|  3 |                287 |          48.101  |
+|  4 |                286 |          23.0769 |
++----+--------------------+------------------+
+Total rows: 290, Columns: 2
+
+Submitted Query Result:
++----+--------------+------------------+
+|    |   EmployeeID |   CurrentPayRate |
+|----+--------------+------------------|
+|  0 |            1 |         125.5    |
+|  1 |            2 |          63.4615 |
+|  2 |            3 |          43.2692 |
+|  3 |            4 |          29.8462 |
+|  4 |            5 |          32.6923 |
++----+--------------+------------------+
+Total rows: 290, Columns: 2
+
+Evaluating Q17...
+Question: Select the minimum, average, and maximum pay rates from employees’ current pay rates.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------+--------------+--------------+
+|    |   MinPayRate |   AvgPayRate |   MaxPayRate |
+|----+--------------+--------------+--------------|
+|  0 |            9 |      18.1882 |        125.5 |
++----+--------------+--------------+--------------+
+Total rows: 1, Columns: 3
+
+Submitted Query Result:
++----+------------------+------------------+------------------+
+|    |   MinimumPayRate |   AveragePayRate |   MaximumPayRate |
+|----+------------------+------------------+------------------|
+|  0 |                9 |          18.1882 |            125.5 |
++----+------------------+------------------+------------------+
+Total rows: 1, Columns: 3
+
+Evaluating Q18...
+Question: Select all employee IDs who took more than 60 hours of vacation or who took more than 60 hours of sick leave.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+--------------------+
+|    |   BusinessEntityID |
+|----+--------------------|
+|  0 |                  1 |
+|  1 |                  4 |
+|  2 |                  7 |
+|  3 |                  8 |
+|  4 |                  9 |
++----+--------------------+
+Total rows: 119, Columns: 1
+
+Submitted Query Result:
++----+--------------------+
+|    |   BusinessEntityID |
+|----+--------------------|
+|  0 |                  1 |
+|  1 |                  4 |
+|  2 |                  7 |
+|  3 |                  8 |
+|  4 |                  9 |
++----+--------------------+
+Total rows: 119, Columns: 1
+
+Evaluating Q19...
+Question: Select the IDs of employees who have the job titles ‘Sales Representative’ or ‘Tool Designer’ and who have worked (or are working) in the Sales or Marketing departments.List by value with the highest first.
+Grade: Equal
+Reason: The answer is exactly the same as the expected result.
+
+Reference Query Result:
++----+--------------------+
+|    |   BusinessEntityID |
+|----+--------------------|
+|  0 |                275 |
+|  1 |                276 |
+|  2 |                277 |
+|  3 |                278 |
+|  4 |                279 |
++----+--------------------+
+Total rows: 14, Columns: 1
+
+Submitted Query Result:
++----+--------------------+
+|    |   BusinessEntityID |
+|----+--------------------|
+|  0 |                290 |
+|  1 |                289 |
+|  2 |                288 |
+|  3 |                286 |
+|  4 |                284 |
++----+--------------------+
+Total rows: 14, Columns: 1
+
+Evaluating Q20...
+Question: Select the IDs, job titles, and department names for employees associated with Sales Representative or Marketing Manager roles.
+Grade: Equal
+Reason: The answer is the same data but with different column names.
+
+Reference Query Result:
++----+--------------------+----------------------+------------------+
+|    |   BusinessEntityID | JobTitle             | DepartmentName   |
+|----+--------------------+----------------------+------------------|
+|  0 |                 16 | Marketing Manager    | Purchasing       |
+|  1 |                 16 | Marketing Manager    | Marketing        |
+|  2 |                275 | Sales Representative | Sales            |
+|  3 |                276 | Sales Representative | Sales            |
+|  4 |                277 | Sales Representative | Sales            |
++----+--------------------+----------------------+------------------+
+Total rows: 16, Columns: 3
+
+Submitted Query Result:
++----+------+----------------------+------------------+
+|    |   ID | JobTitle             | DepartmentName   |
+|----+------+----------------------+------------------|
+|  0 |   16 | Marketing Manager    | Purchasing       |
+|  1 |   16 | Marketing Manager    | Marketing        |
+|  2 |  275 | Sales Representative | Sales            |
+|  3 |  276 | Sales Representative | Sales            |
+|  4 |  277 | Sales Representative | Sales            |
++----+------+----------------------+------------------+
+Total rows: 16, Columns: 3
+
+Evaluation Summary:
++----+------+----------+------------------------------------------------------------------------------------+
+|    | id   | grade    | reason                                                                             |
+|----+------+----------+------------------------------------------------------------------------------------|
+|  0 | Q1   | Equal    | The answer is exactly the same as the expected result.                             |
+|  1 | Q2   | Correct+ | The answer contains all expected data plus additional information.                 |
+|  2 | Q3   | Equal    | The answer is exactly the same as the expected result.                             |
+|  3 | Q4   | Equal    | The answer is exactly the same as the expected result.                             |
+|  4 | Q5   | Equal    | The answer is exactly the same as the expected result.                             |
+|  5 | Q6   | Correct- | The answer contains similar data to the expected result but presented differently. |
+|  6 | Q7   | Equal    | The answer is the same data but with different column names.                       |
+|  7 | Q8   | Equal    | The answer is the same data but with different column names.                       |
+|  8 | Q9   | Equal    | The answer is exactly the same as the expected result.                             |
+|  9 | Q10  | Equal    | The answer is the same data but with different column names.                       |
+| 10 | Q11  | Equal    | The answer is the same data but with different column names.                       |
+| 11 | Q12  | Equal    | The answer is the same data but with different column names.                       |
+| 12 | Q13  | Equal    | The answer is the same data but with different column names.                       |
+| 13 | Q14  | Equal    | The answer is the same data but with different column names.                       |
+| 14 | Q15  | Equal    | The answer is exactly the same as the expected result.                             |
+| 15 | Q16  | Equal    | The answer is the same data but with different column names.                       |
+| 16 | Q17  | Equal    | The answer is the same data but with different column names.                       |
+| 17 | Q18  | Equal    | The answer is exactly the same as the expected result.                             |
+| 18 | Q19  | Equal    | The answer is exactly the same as the expected result.                             |
+| 19 | Q20  | Equal    | The answer is the same data but with different column names.                       |
++----+------+----------+------------------------------------------------------------------------------------+
