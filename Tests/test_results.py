@@ -266,9 +266,9 @@ def evaluate_all_queries(yaml_file):
     connection.close()
     
     # Save results to JSON
-    with open('evaluation_results.json', 'w') as f:
-        json.dump(results, f, indent=2)
-    
+    with open('evaluation_results.json', 'w') as json_file:
+        json.dump(results, json_file, indent=4)
+
     # Create summary DataFrame
     summary_df = pd.DataFrame(results)
     print("\nEvaluation Summary:")
