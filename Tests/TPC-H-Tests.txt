@@ -1,0 +1,605 @@
+
+Evaluating Q1...
+Question: The Pricing Summary Report Query provides a summary pricing report for all lineitems shipped as of a given date.  The date is within 60 - 120 days of the greatest ship date contained in the database. The query lists totals for  extended price, discounted extended price, discounted extended price plus tax, average quantity, average extended  price, and average discount. These aggregates are grouped by RETURNFLAG and LINESTATUS, and listed in ascending  order of RETURNFLAG and LINESTATUS. A count of the number of lineitems in each group is included.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+----------------+----------------+-----------+------------------+------------------+--------------+-----------+-------------+------------+---------------+
+|    | l_returnflag   | l_linestatus   |   sum_qty |   sum_base_price |   sum_disc_price |   sum_charge |   avg_qty |   avg_price |   avg_disc |   count_order |
+|----+----------------+----------------+-----------+------------------+------------------+--------------+-----------+-------------+------------+---------------|
+|  0 | N              | O              |     28825 |      4.03421e+07 |      3.82623e+07 |  3.98467e+07 |   25.7366 |     36019.8 |   0.051098 |          1120 |
++----+----------------+----------------+-----------+------------------+------------------+--------------+-----------+-------------+------------+---------------+
+Total rows: 1, Columns: 10
+
+Submitted Query Result:
++----+----------------+----------------+---------+----------------+------------------+-----------------------------+--------------------------------------+--------------------+--------------------------+--------------------+
+|    | l_returnflag   | l_linestatus   |   count |   sum_quantity |   extended_price |   discounted_extended_price |   discounted_extended_price_plus_tax |   average_quantity |   average_extended_price |   average_discount |
+|----+----------------+----------------+---------+----------------+------------------+-----------------------------+--------------------------------------+--------------------+--------------------------+--------------------|
+|  0 | N              | O              |    1120 |          28825 |      4.03421e+07 |                 3.82623e+07 |                          3.98467e+07 |            25.7366 |                  36019.8 |           0.051098 |
++----+----------------+----------------+---------+----------------+------------------+-----------------------------+--------------------------------------+--------------------+--------------------------+--------------------+
+Total rows: 1, Columns: 10
+
+Evaluating Q2...
+Question: The Minimum Cost Supplier Query finds, in a given region, for each part of a certain type and size, the supplier who can supply it at minimum cost. If several suppliers in that region offer the desired part type and size at the same (minimum) cost, the query lists the parts from suppliers with the 100 highest account balances. For each supplier, the query lists the supplier's account balance, name and nation; the part's number and manufacturer; the supplier's address, phone number and comment information.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-------------+--------------------+------------+-------------+----------------+---------------------------+-----------------+--------------------------------------------------------------------------------+
+|    |   s_acctbal | s_name             | n_name     |   p_partkey | p_mfgr         | s_address                 | s_phone         | s_comment                                                                      |
+|----+-------------+--------------------+------------+-------------+----------------+---------------------------+-----------------+--------------------------------------------------------------------------------|
+|  0 |     5916.91 | Supplier#000000031 | MOZAMBIQUE |        1930 | Manufacturer#3 | fRJimA7zchyApqRLHcQeocVpP | 26-515-530-4159 | into beans wake after the special packages. slyly fluffy requests cajole furio |
++----+-------------+--------------------+------------+-------------+----------------+---------------------------+-----------------+--------------------------------------------------------------------------------+
+Total rows: 1, Columns: 8
+
+Submitted Query Result:
++----+-------------+--------------------+------------+-------------+----------------+---------------------------+-----------------+--------------------------------------------------------------------------------+
+|    |   s_acctbal | s_name             | nation     |   p_partkey | p_mfgr         | s_address                 | s_phone         | s_comment                                                                      |
+|----+-------------+--------------------+------------+-------------+----------------+---------------------------+-----------------+--------------------------------------------------------------------------------|
+|  0 |     5916.91 | Supplier#000000031 | MOZAMBIQUE |        1930 | Manufacturer#3 | fRJimA7zchyApqRLHcQeocVpP | 26-515-530-4159 | into beans wake after the special packages. slyly fluffy requests cajole furio |
++----+-------------+--------------------+------------+-------------+----------------+---------------------------+-----------------+--------------------------------------------------------------------------------+
+Total rows: 1, Columns: 8
+
+Evaluating Q3...
+Question: The Shipping Priority Query retrieves the shipping priority and potential revenue, defined as the sum of l_extendedprice * (1-l_discount), of the orders having the largest revenue among those that had not been shipped as of a given date. Orders are listed in decreasing order of revenue. If more than 10 unshipped orders exist, only the 10 orders with the largest revenue are listed.
+
+Grade: Correct+
+Reason: The answer contains all expected data plus additional columns.
+
+Reference Query Result:
++----+--------------+-----------+-------------------+
+|    |   l_orderkey |   revenue | o_orderpriority   |
+|----+--------------+-----------+-------------------|
+|  0 |          645 |    280529 | 2-HIGH            |
+|  1 |        45959 |    271380 | 3-MEDIUM          |
+|  2 |        40261 |    262023 | 1-URGENT          |
+|  3 |        46341 |    254897 | 2-HIGH            |
+|  4 |         5765 |    243446 | 5-LOW             |
++----+--------------+-----------+-------------------+
+Total rows: 10, Columns: 3
+
+Submitted Query Result:
++----+------------------+-----------+-------------------+--------------+
+|    |   o_shippriority |   revenue | o_orderpriority   |   l_orderkey |
+|----+------------------+-----------+-------------------+--------------|
+|  0 |                0 |    280529 | 2-HIGH            |          645 |
+|  1 |                0 |    271380 | 3-MEDIUM          |        45959 |
+|  2 |                0 |    262023 | 1-URGENT          |        40261 |
+|  3 |                0 |    254897 | 2-HIGH            |        46341 |
+|  4 |                0 |    243446 | 5-LOW             |         5765 |
++----+------------------+-----------+-------------------+--------------+
+Total rows: 10, Columns: 4
+
+Evaluating Q4...
+Question: The Order Priority Checking Query counts the number of orders ordered in a given quarter of a given year in which at least one lineitem was received by the customer later than its committed date. The query lists the count of such orders for each order priority sorted in ascending priority order.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-------------------+---------------+
+|    | o_orderpriority   |   order_count |
+|----+-------------------+---------------|
+|  0 | 1-URGENT          |           114 |
+|  1 | 2-HIGH            |            98 |
+|  2 | 3-MEDIUM          |           104 |
+|  3 | 4-NOT SPECIFIED   |           110 |
+|  4 | 5-LOW             |           116 |
++----+-------------------+---------------+
+Total rows: 5, Columns: 2
+
+Submitted Query Result:
++----+-------------------+---------+
+|    | o_orderpriority   |   count |
+|----+-------------------+---------|
+|  0 | 1-URGENT          |     114 |
+|  1 | 2-HIGH            |      98 |
+|  2 | 3-MEDIUM          |     104 |
+|  3 | 4-NOT SPECIFIED   |     110 |
+|  4 | 5-LOW             |     116 |
++----+-------------------+---------+
+Total rows: 5, Columns: 2
+
+Evaluating Q5...
+Question: The Local Supplier Volume Query lists for each nation in a region the revenue volume that resulted from lineitem transactions in which the customer ordering parts and the supplier filling them were both within that nation. The query is run in order to determine whether to institute local distribution centers in a given region. The query consid- ers only parts ordered in a given year. The query displays the nations and revenue volume in descending order by revenue. Revenue volume for all qualifying lineitems in a particular nation is defined as sum(l_extendedprice * (1 - l_discount))
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+---------------+-----------+
+|    | n_name        |   revenue |
+|----+---------------+-----------|
+|  0 | UNITED STATES |    557588 |
+|  1 | BRAZIL        |    340054 |
+|  2 | PERU          |    296403 |
+|  3 | CANADA        |    222052 |
+|  4 | ARGENTINA     |    195044 |
++----+---------------+-----------+
+Total rows: 5, Columns: 2
+
+Submitted Query Result:
++----+---------------+------------------+
+|    | nation        |   revenue_volume |
+|----+---------------+------------------|
+|  0 | UNITED STATES |           557588 |
+|  1 | BRAZIL        |           340054 |
+|  2 | PERU          |           296403 |
+|  3 | CANADA        |           222052 |
+|  4 | ARGENTINA     |           195044 |
++----+---------------+------------------+
+Total rows: 5, Columns: 2
+
+Evaluating Q6...
+Question: The Forecasting Revenue Change Query considers all the lineitems shipped in a given year with discounts between DISCOUNT-0.01 and DISCOUNT+0.01. The query lists the amount by which the total revenue would have increased if these discounts had been eliminated for lineitems with l_quantity less than quantity. Note that the potential revenue increase is equal to the sum of [l_extendedprice * l_discount] for all lineitems with discounts and quantities in the qualifying range.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-------------+
+|    |     revenue |
+|----+-------------|
+|  0 | 3.02945e+06 |
++----+-------------+
+Total rows: 1, Columns: 1
+
+Submitted Query Result:
++----+------------------------------+
+|    |   potential_revenue_increase |
+|----+------------------------------|
+|  0 |                  3.02945e+06 |
++----+------------------------------+
+Total rows: 1, Columns: 1
+
+Evaluating Q7...
+Question: The Volume Shipping Query finds, for two given nations, the gross discounted revenues derived from lineitems in which parts were shipped from a supplier in either nation to a customer in the other nation during 1995 and 1996. The query lists the supplier nation, the customer nation, the year, and the revenue from shipments that took place in that year. The query orders the answer by Supplier nation, Customer nation, and year (all ascending).
+
+Grade: Correct-
+Reason: The answer contains most of the same numeric values.
+
+Reference Query Result:
++----+---------------+---------------+----------+-----------+
+|    | supp_nation   | cust_nation   |   l_year |   revenue |
+|----+---------------+---------------+----------+-----------|
+|  0 | BRAZIL        | CANADA        |     1995 |    349001 |
+|  1 | BRAZIL        | CANADA        |     1996 |    226290 |
+|  2 | CANADA        | BRAZIL        |     1995 |    453721 |
+|  3 | CANADA        | BRAZIL        |     1996 |    315162 |
++----+---------------+---------------+----------+-----------+
+Total rows: 4, Columns: 4
+
+Submitted Query Result:
++----+-------------------+-------------------+--------+-----------+
+|    | supplier_nation   | customer_nation   |   year |   revenue |
+|----+-------------------+-------------------+--------+-----------|
+|  0 | BRAZIL            | CANADA            |   1992 |    418879 |
+|  1 | BRAZIL            | CANADA            |   1993 |    223169 |
+|  2 | BRAZIL            | CANADA            |   1994 |    336886 |
+|  3 | BRAZIL            | CANADA            |   1995 |    349001 |
+|  4 | BRAZIL            | CANADA            |   1996 |    226290 |
++----+-------------------+-------------------+--------+-----------+
+Total rows: 9, Columns: 4
+
+Evaluating Q8...
+Question: The market share for a given nation within a given region is defined as the fraction of the revenue, the sum of [l_extendedprice * (1-l_discount)], from the products of a specified type in that region that was supplied by suppli- ers from the given nation. The query determines this for the years 1995 and 1996 presented in this order.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+--------+----------------+
+|    |   year |   market_share |
+|----+--------+----------------|
+|  0 |   1995 |       0.056057 |
+|  1 |   1996 |       0.010069 |
++----+--------+----------------+
+Total rows: 2, Columns: 2
+
+Submitted Query Result:
++----+--------+----------------+
+|    |   year |   market_share |
+|----+--------+----------------|
+|  0 |   1995 |       0.056057 |
+|  1 |   1996 |       0.010069 |
++----+--------+----------------+
+Total rows: 2, Columns: 2
+
+Evaluating Q9...
+Question: The Product Type Profit Measure Query finds, for each nation and each year, the profit for all parts ordered in that year that contain a specified substring in their names and that were filled by a supplier in that nation. The profit is defined as the sum of [(l_extendedprice*(1-l_discount)) - (ps_supplycost * l_quantity)] for all lineitems describing parts in the specified line. The query lists the nations in ascending alphabetical order and, for each nation, the year and profit in descending order by year (most recent first).
+
+Grade: Incorrect
+Reason: The answer is incorrect and has different data from the expected result.
+
+Reference Query Result:
++----+-----------+----------+--------------+
+|    | nation    |   o_year |   sum_profit |
+|----+-----------+----------+--------------|
+|  0 | ARGENTINA |     1998 |  1.47091e+06 |
+|  1 | ARGENTINA |     1997 |  1.76198e+06 |
+|  2 | ARGENTINA |     1996 |  1.54498e+06 |
+|  3 | ARGENTINA |     1995 |  1.55844e+06 |
+|  4 | ARGENTINA |     1994 |  1.92773e+06 |
++----+-----------+----------+--------------+
+Total rows: 28, Columns: 3
+
+Submitted Query Result:
++----+-----------+----------+----------+-------------------------+--------------+
+|    | nation    | region   |   o_year | product_type            |   sum_profit |
+|----+-----------+----------+----------+-------------------------+--------------|
+|  0 | ARGENTINA | AMERICA  |     1998 | STANDARD POLISHED BRASS |     12983.1  |
+|  1 | ARGENTINA | AMERICA  |     1997 | STANDARD POLISHED BRASS |     13309.6  |
+|  2 | ARGENTINA | AMERICA  |     1996 | STANDARD POLISHED BRASS |     16631.5  |
+|  3 | ARGENTINA | AMERICA  |     1994 | STANDARD POLISHED BRASS |      4533.36 |
+|  4 | ARGENTINA | AMERICA  |     1993 | STANDARD POLISHED BRASS |     12975.5  |
++----+-----------+----------+----------+-------------------------+--------------+
+Total rows: 16, Columns: 5
+
+Evaluating Q10...
+Question: The Returned Item Reporting Query finds the top 20 customers, in terms of their effect on lost revenue for a given quarter, who have returned parts. The query considers only parts that were ordered in the specified quarter. The query lists the customer's name, address, nation, phone number, account balance, comment information and revenue lost. The customers are listed in descending order of lost revenue. Revenue lost is defined as sum(l_extendedprice*(1-l_discount)) for all qualifying lineitems.
+
+Grade: Correct-
+Reason: The data contains most of the same numeric values but in different structure.
+
+Reference Query Result:
++----+-------------+-------------------------+------------------------------------------+---------------+-----------------+-------------+-------------------------------------------------------------------------------------------------------------------+-----------+
+|    |   c_custkey | c_name                  | c_address                                |   c_nationkey | c_phone         |   c_acctbal | c_comment                                                                                                         |   revenue |
+|----+-------------+-------------------------+------------------------------------------+---------------+-----------------+-------------+-------------------------------------------------------------------------------------------------------------------+-----------|
+|  0 |        1334 | tpch.customer#000001334 | gZkxQY2Aa3o D6f1O 7nsPdg6BJ3             |             5 | 15-493-800-1041 |     2485.71 | unusual dependencies cajole regular, r                                                                            |    344323 |
+|  1 |         881 | tpch.customer#000000881 | XJ94RTR2oXI omeh                         |             4 | 14-127-261-7876 |     2141.71 | pinto beans. asymptotes about the slowly even theodolites are pending requests                                    |    315951 |
+|  2 |         874 | tpch.customer#000000874 | rdo knkGhtvpH6dbLkQon8QsrK1z4LFUpaVDTOn2 |             0 | 10-886-494-4217 |     5391.74 | st the deposits. furiously even requests cajole slyly. bol                                                        |    314401 |
+|  3 |         109 | tpch.customer#000000109 | OOOkYBgCMzgMQXUmkocoLb56rfrdWp2NE2c      |            16 | 26-992-422-8153 |     -716.1  | es. fluffily final dependencies sleep along the blithely even pinto beans. final deposits haggle furiously furiou |    314006 |
+|  4 |         268 | tpch.customer#000000268 | tkSLQoOpfOa601itad05EcN0UmhjZXdyKRc0r    |             3 | 13-720-469-5207 |     6821.01 | press ideas print quickly. fluffily unusual deposits use blithely eve                                             |    309434 |
++----+-------------+-------------------------+------------------------------------------+---------------+-----------------+-------------+-------------------------------------------------------------------------------------------------------------------+-----------+
+Total rows: 376, Columns: 8
+
+Submitted Query Result:
++----+-------------------------+------------------------------------------+------------+-----------------+-------------+-------------------------------------------------------------------------------------------------------------------+----------------+
+|    | c_name                  | c_address                                | n_name     | c_phone         |   c_acctbal | c_comment                                                                                                         |   revenue_lost |
+|----+-------------------------+------------------------------------------+------------+-----------------+-------------+-------------------------------------------------------------------------------------------------------------------+----------------|
+|  0 | tpch.customer#000001334 | gZkxQY2Aa3o D6f1O 7nsPdg6BJ3             | ETHIOPIA   | 15-493-800-1041 |     2485.71 | unusual dependencies cajole regular, r                                                                            |         344323 |
+|  1 | tpch.customer#000000881 | XJ94RTR2oXI omeh                         | EGYPT      | 14-127-261-7876 |     2141.71 | pinto beans. asymptotes about the slowly even theodolites are pending requests                                    |         315951 |
+|  2 | tpch.customer#000000874 | rdo knkGhtvpH6dbLkQon8QsrK1z4LFUpaVDTOn2 | ALGERIA    | 10-886-494-4217 |     5391.74 | st the deposits. furiously even requests cajole slyly. bol                                                        |         314401 |
+|  3 | tpch.customer#000000109 | OOOkYBgCMzgMQXUmkocoLb56rfrdWp2NE2c      | MOZAMBIQUE | 26-992-422-8153 |     -716.1  | es. fluffily final dependencies sleep along the blithely even pinto beans. final deposits haggle furiously furiou |         314006 |
+|  4 | tpch.customer#000000268 | tkSLQoOpfOa601itad05EcN0UmhjZXdyKRc0r    | CANADA     | 13-720-469-5207 |     6821.01 | press ideas print quickly. fluffily unusual deposits use blithely eve                                             |         309434 |
++----+-------------------------+------------------------------------------+------------+-----------------+-------------+-------------------------------------------------------------------------------------------------------------------+----------------+
+Total rows: 374, Columns: 7
+
+Evaluating Q11...
+Question: The Important Stock Identification Query finds, from scanning the available stock of suppliers in a given nation, all the parts that represent a significant percentage of the total value of all available parts. The query displays the part number and the value of those parts in descending order of value.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+--------------+-------------+
+|    |   ps_partkey |       value |
+|----+--------------+-------------|
+|  0 |          952 | 8.27614e+06 |
+|  1 |          391 | 8.20564e+06 |
+|  2 |         1765 | 7.80878e+06 |
+|  3 |         1015 | 7.58214e+06 |
+|  4 |          658 | 7.47206e+06 |
++----+--------------+-------------+
+Total rows: 38, Columns: 2
+
+Submitted Query Result:
++----+---------------+--------------+
+|    |   part_number |   part_value |
+|----+---------------+--------------|
+|  0 |           952 |  8.27614e+06 |
+|  1 |           391 |  8.20564e+06 |
+|  2 |          1765 |  7.80878e+06 |
+|  3 |          1015 |  7.58214e+06 |
+|  4 |           658 |  7.47206e+06 |
++----+---------------+--------------+
+Total rows: 38, Columns: 2
+
+Evaluating Q12...
+Question: The Shipping Modes and Order Priority Query counts, by ship mode, for lineitems actually received by customers in a given year, the number of lineitems belonging to orders for which the l_receiptdate exceeds the l_commitdate for two different specified ship modes. Only lineitems that were actually shipped before the l_commitdate are con- sidered. The late lineitems are partitioned into two groups, those with priority URGENT or HIGH, and those with a priority other than URGENT or HIGH.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+--------------+-------------------+------------------+
+|    | l_shipmode   |   high_line_count |   low_line_count |
+|----+--------------+-------------------+------------------|
+|  0 | SHIP         |                61 |               93 |
+|  1 | TRUCK        |                69 |               79 |
++----+--------------+-------------------+------------------+
+Total rows: 2, Columns: 3
+
+Submitted Query Result:
++----+--------------+-----------------------+----------------------+
+|    | l_shipmode   |   high_priority_count |   low_priority_count |
+|----+--------------+-----------------------+----------------------|
+|  0 | TRUCK        |                    69 |                   79 |
+|  1 | SHIP         |                    61 |                   93 |
++----+--------------+-----------------------+----------------------+
+Total rows: 2, Columns: 3
+
+Evaluating Q13...
+Question: This query determines the distribution of customers by the number of orders they have made, including customers who have no record of orders, past or present. It counts and reports how many customers have no orders, how many have 1, 2, 3, etc. A check is made to ensure that the orders counted do not fall into one of several special categories of orders. Special categories are identified in the order comment column by looking for a particular pattern.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-----------+------------+
+|    |   c_count |   custdist |
+|----+-----------+------------|
+|  0 |         0 |        500 |
+|  1 |        11 |         67 |
+|  2 |         9 |         63 |
+|  3 |        12 |         63 |
+|  4 |        10 |         63 |
++----+-----------+------------+
+Total rows: 32, Columns: 2
+
+Submitted Query Result:
++----+------------------+---------------------+
+|    |   NumberOfOrders |   NumberOfCustomers |
+|----+------------------+---------------------|
+|  0 |                0 |                 500 |
+|  1 |                2 |                   2 |
+|  2 |                3 |                   2 |
+|  3 |                4 |                   6 |
+|  4 |                5 |                  13 |
++----+------------------+---------------------+
+Total rows: 32, Columns: 2
+
+Evaluating Q14...
+Question: The Promotion Effect Query determines what percentage of the revenue in a given year and month was derived from promotional parts. The query considers only parts actually shipped in that month and gives the percentage. Revenue is defined as (l_extendedprice * (1-l_discount)).
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-----------------+
+|    |   promo_revenue |
+|----+-----------------|
+|  0 |         1.70194 |
++----+-----------------+
+Total rows: 1, Columns: 1
+
+Submitted Query Result:
++----+----------------------------+
+|    |   promo_revenue_percentage |
+|----+----------------------------|
+|  0 |                    1.70194 |
++----+----------------------------+
+Total rows: 1, Columns: 1
+
+Evaluating Q15...
+Question: The Top Supplier Query finds the supplier who contributed the most to the overall revenue for parts shipped during a given quarter of a given year. In case of a tie, the query lists all suppliers whose contribution was equal to the maximum, presented in supplier number order.
+
+Grade: Correct-
+Reason: The numeric values match closely but presentation differs.
+
+Reference Query Result:
++----+-------------+--------------------+---------------------------+-----------------+-----------------+
+|    |   s_suppkey | s_name             | s_address                 | s_phone         |   total_revenue |
+|----+-------------+--------------------+---------------------------+-----------------+-----------------|
+|  0 |          51 | Supplier#000000051 | rDkBXb01POIKjOwrij62uM8O4 | 19-475-537-1368 |     1.25204e+06 |
++----+-------------+--------------------+---------------------------+-----------------+-----------------+
+Total rows: 1, Columns: 5
+
+Submitted Query Result:
++----+----------------+--------------------+-------------+
+|    |   supplier_key | supplier_name      |     revenue |
+|----+----------------+--------------------+-------------|
+|  0 |             51 | Supplier#000000051 | 1.25204e+06 |
++----+----------------+--------------------+-------------+
+Total rows: 1, Columns: 3
+
+Evaluating Q16...
+Question: The Parts/Supplier Relationship Query counts the number of suppliers who can supply parts that satisfy a particular customer's requirements. The customer is interested in parts of eight different sizes as long as they are not of a given type, not of a given brand, and not from a supplier who has had complaints registered at the Better Business Bureau. Results must be presented in descending count and ascending brand, type, and size.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-----------+-------------------------+----------+------------------+
+|    | p_brand   | p_type                  |   p_size |   supplier_count |
+|----+-----------+-------------------------+----------+------------------|
+|  0 | Brand#11  | ECONOMY ANODIZED NICKEL |       33 |                4 |
+|  1 | Brand#11  | ECONOMY POLISHED STEEL  |       41 |                4 |
+|  2 | Brand#11  | LARGE BRUSHED COPPER    |       41 |                4 |
+|  3 | Brand#11  | MEDIUM ANODIZED BRASS   |       45 |                4 |
+|  4 | Brand#11  | MEDIUM BRUSHED BRASS    |       45 |                4 |
++----+-----------+-------------------------+----------+------------------+
+Total rows: 292, Columns: 4
+
+Submitted Query Result:
++----+-----------+-------------------------+----------+------------------+
+|    | p_brand   | p_type                  |   p_size |   supplier_count |
+|----+-----------+-------------------------+----------+------------------|
+|  0 | Brand#41  | MEDIUM BRUSHED BRASS    |       15 |                8 |
+|  1 | Brand#11  | ECONOMY ANODIZED NICKEL |       33 |                4 |
+|  2 | Brand#11  | ECONOMY POLISHED STEEL  |       41 |                4 |
+|  3 | Brand#11  | LARGE BRUSHED COPPER    |       41 |                4 |
+|  4 | Brand#11  | MEDIUM ANODIZED BRASS   |       45 |                4 |
++----+-----------+-------------------------+----------+------------------+
+Total rows: 292, Columns: 4
+
+Evaluating Q17...
+Question: The Small-Quantity-Order Revenue Query considers parts of a given brand and with a given container type and determines the average lineitem quantity of such parts ordered for all orders (past and pending) in the 7-year data- base. What would be the average yearly gross (undiscounted) loss in revenue if orders for these parts with a quantity of less than 20% of this average were no longer taken?
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+--------------+
+|    |   avg_yearly |
+|----+--------------|
+|  0 |      3639.23 |
++----+--------------+
+Total rows: 1, Columns: 1
+
+Submitted Query Result:
++----+-------------------+
+|    |   avg_yearly_loss |
+|----+-------------------|
+|  0 |           3639.23 |
++----+-------------------+
+Total rows: 1, Columns: 1
+
+Evaluating Q18...
+Question: The Large Volume Customer Query finds a list of the top 100 customers who have ever placed large quantity orders. The query lists the customer name, customer key, the order key, date and total price and the quantity for the order.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-------------------------+-------------+--------------+---------------+----------------+-----+
+|    | c_name                  |   c_custkey |   o_orderkey | o_orderdate   |   o_totalprice |     |
+|----+-------------------------+-------------+--------------+---------------+----------------+-----|
+|  0 | tpch.customer#000000676 |         676 |        52965 | 1996-09-22    |         466001 | 271 |
+|  1 | tpch.customer#000000667 |         667 |        29158 | 1995-10-21    |         439687 | 305 |
+|  2 | tpch.customer#000001013 |        1013 |        44707 | 1997-08-14    |         431772 | 279 |
+|  3 | tpch.customer#000000953 |         953 |        59106 | 1996-10-24    |         430620 | 276 |
+|  4 | tpch.customer#000000178 |         178 |         6882 | 1997-04-09    |         422360 | 303 |
++----+-------------------------+-------------+--------------+---------------+----------------+-----+
+Total rows: 100, Columns: 6
+
+Submitted Query Result:
++----+-------------------------+----------------+-------------+--------------+---------------+------------------+
+|    | customer_name           |   customer_key |   order_key | order_date   |   total_price |   total_quantity |
+|----+-------------------------+----------------+-------------+--------------+---------------+------------------|
+|  0 | tpch.customer#000000676 |            676 |       52965 | 1996-09-22   |        466001 |              271 |
+|  1 | tpch.customer#000000667 |            667 |       29158 | 1995-10-21   |        439687 |              305 |
+|  2 | tpch.customer#000001013 |           1013 |       44707 | 1997-08-14   |        431772 |              279 |
+|  3 | tpch.customer#000000953 |            953 |       59106 | 1996-10-24   |        430620 |              276 |
+|  4 | tpch.customer#000000178 |            178 |        6882 | 1997-04-09   |        422360 |              303 |
++----+-------------------------+----------------+-------------+--------------+---------------+------------------+
+Total rows: 100, Columns: 6
+
+Evaluating Q19...
+Question: The Discounted Revenue query finds the gross discounted revenue for all orders for three different types of parts that were shipped by air and delivered in person. Parts are selected based on the combination of specific brands, a list of containers, and a range of sizes.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-----------+
+|    |   revenue |
+|----+-----------|
+|  0 |   57484.7 |
++----+-----------+
+Total rows: 1, Columns: 1
+
+Submitted Query Result:
++----+----------------------------+
+|    |   gross_discounted_revenue |
+|----+----------------------------|
+|  0 |                    57484.7 |
++----+----------------------------+
+Total rows: 1, Columns: 1
+
+Evaluating Q20...
+Question: The Potential Part Promotion query identifies suppliers who have an excess of a given part available; an excess is defined to be more than 50% of the parts like the given part that the supplier shipped in a given year for a given nation. Only parts whose names share a certain naming convention are considered.
+
+Grade: Incorrect
+Reason: The answer is incorrect and has different data from the expected result.
+
+Reference Query Result:
++----------+-------------+
+| s_name   | s_address   |
+|----------+-------------|
++----------+-------------+
+Total rows: 0, Columns: 2
+
+Submitted Query Result:
++----+--------------------+---------------------------------------+---------------+
+|    | s_name             | p_name                                |   ps_availqty |
+|----+--------------------+---------------------------------------+---------------|
+|  0 | Supplier#000000002 | beige frosted moccasin chocolate snow |          9702 |
+|  1 | Supplier#000000002 | lime frosted indian dodger linen      |           138 |
+|  2 | Supplier#000000002 | deep dim peach light beige            |          5311 |
+|  3 | Supplier#000000002 | tan thistle frosted indian lawn       |          7392 |
+|  4 | Supplier#000000002 | magenta blue chartreuse tan green     |          7522 |
++----+--------------------+---------------------------------------+---------------+
+Total rows: 47, Columns: 3
+
+Evaluating Q21...
+Question: The Suppliers Who Kept Orders Waiting query identifies suppliers, for a given nation, whose product was part of a multi-supplier order (with current status of 'F') where they were the only supplier who failed to meet the committed delivery date.
+
+Grade: Correct-
+Reason: The answer contains most of the same numeric values.
+
+Reference Query Result:
++----+--------------------+-----------+
+|    | s_name             |   numwait |
+|----+--------------------+-----------|
+|  0 | Supplier#000000021 |        10 |
+|  1 | Supplier#000000092 |        10 |
++----+--------------------+-----------+
+Total rows: 2, Columns: 2
+
+Submitted Query Result:
++----+--------------------+---------------+---------------+
+|    | s_name             |   s_nationkey | nation_name   |
+|----+--------------------+---------------+---------------|
+|  0 | Supplier#000000057 |            17 | PERU          |
+|  1 | Supplier#000000051 |             9 | INDONESIA     |
+|  2 | Supplier#000000020 |             3 | CANADA        |
+|  3 | Supplier#000000092 |             2 | BRAZIL        |
+|  4 | Supplier#000000061 |             8 | INDIA         |
++----+--------------------+---------------+---------------+
+Total rows: 1523, Columns: 3
+
+Evaluating Q22...
+Question: This query counts how many customers within a specific range of country codes have not placed orders for 7 years but who have a greater than average “positive” account balance. It also reflects the magnitude of that balance. Country code is defined as the first two characters of c_phone.
+
+Grade: Equal
+Reason: The answer contains the same data values as the expected result.
+
+Reference Query Result:
++----+-------------+-----------+--------------+
+|    |   entrycode |   numcust |   totacctbal |
+|----+-------------+-----------+--------------|
+|  0 |          10 |         8 |      64471.4 |
+|  1 |          11 |        11 |      82845.3 |
++----+-------------+-----------+--------------+
+Total rows: 2, Columns: 3
+
+Submitted Query Result:
++----+----------------+-----------+--------------+
+|    |   country_code |   numcust |   totacctbal |
+|----+----------------+-----------+--------------|
+|  0 |             11 |        11 |      82845.3 |
+|  1 |             10 |         8 |      64471.4 |
++----+----------------+-----------+--------------+
+Total rows: 2, Columns: 3
+
+Evaluation Summary:
++----+------+-----------+-------------------------------------------------------------------------------+
+|    | id   | grade     | reason                                                                        |
+|----+------+-----------+-------------------------------------------------------------------------------|
+|  0 | Q1   | Equal     | The answer contains the same data values as the expected result.              |
+|  1 | Q2   | Equal     | The answer contains the same data values as the expected result.              |
+|  2 | Q3   | Correct+  | The answer contains all expected data plus additional columns.                |
+|  3 | Q4   | Equal     | The answer contains the same data values as the expected result.              |
+|  4 | Q5   | Equal     | The answer contains the same data values as the expected result.              |
+|  5 | Q6   | Equal     | The answer contains the same data values as the expected result.              |
+|  6 | Q7   | Correct-  | The answer contains most of the same numeric values.                          |
+|  7 | Q8   | Equal     | The answer contains the same data values as the expected result.              |
+|  8 | Q9   | Incorrect | The answer is incorrect and has different data from the expected result.      |
+|  9 | Q10  | Correct-  | The data contains most of the same numeric values but in different structure. |
+| 10 | Q11  | Equal     | The answer contains the same data values as the expected result.              |
+| 11 | Q12  | Equal     | The answer contains the same data values as the expected result.              |
+| 12 | Q13  | Equal     | The answer contains the same data values as the expected result.              |
+| 13 | Q14  | Equal     | The answer contains the same data values as the expected result.              |
+| 14 | Q15  | Correct-  | The numeric values match closely but presentation differs.                    |
+| 15 | Q16  | Equal     | The answer contains the same data values as the expected result.              |
+| 16 | Q17  | Equal     | The answer contains the same data values as the expected result.              |
+| 17 | Q18  | Equal     | The answer contains the same data values as the expected result.              |
+| 18 | Q19  | Equal     | The answer contains the same data values as the expected result.              |
+| 19 | Q20  | Incorrect | The answer is incorrect and has different data from the expected result.      |
+| 20 | Q21  | Correct-  | The answer contains most of the same numeric values.                          |
+| 21 | Q22  | Equal     | The answer contains the same data values as the expected result.              |
++----+------+-----------+-------------------------------------------------------------------------------+

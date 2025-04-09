@@ -13,7 +13,7 @@
 ## Its necessary substitute the placeholders in the SQL queries with the appropriate values [XXX]
 
 Questions:
-  - Q1:
+  Q1:
       Q_GPT: What is the summary of price, discount, and revenue for line items shipped within a given date range?
       Q-TPC-H: >
         The Pricing Summary Report Query provides a summary pricing report for all lineitems shipped as of a given date. 
@@ -22,9 +22,28 @@ Questions:
         price, and average discount. These aggregates are grouped by RETURNFLAG and LINESTATUS, and listed in ascending 
         order of RETURNFLAG and LINESTATUS. A count of the number of lineitems in each group is included.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            l_returnflag,
+            l_linestatus,
+            COUNT(*) AS count,
+            SUM(l_quantity) AS sum_quantity,
+            SUM(l_extendedprice) AS extended_price,
+            SUM(l_extendedprice * (1 - l_discount)) AS discounted_extended_price,
+            SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS discounted_extended_price_plus_tax,
+            AVG(l_quantity) AS average_quantity,
+            AVG(l_extendedprice) AS average_extended_price,
+            AVG(l_discount) AS average_discount
+        FROM 
+            tpch.lineitem
+        WHERE 
+            l_shipdate BETWEEN DATEADD(day, -120, (SELECT MAX(l_shipdate) FROM tpch.lineitem)) 
+                            AND DATEADD(day, -60, (SELECT MAX(l_shipdate) FROM tpch.lineitem))
+        GROUP BY 
+            l_returnflag,
+            l_linestatus
+        ORDER BY 
+            l_returnflag,
+            l_linestatus;      
       S-TPC-H: |
         select
           l_returnflag,
@@ -38,9 +57,10 @@ Questions:
           avg(l_discount) as avg_disc,
           count(*) as count_order
         from
-          lineitem
+           tpch.lineitem
         where
-          l_shipdate <= date '1998-12-01' - interval '[DELTA]' day (3)
+            l_shipdate BETWEEN DATEADD(day, -120, (SELECT MAX(l_shipdate) FROM tpch.lineitem)) 
+                            AND DATEADD(day, -60, (SELECT MAX(l_shipdate) FROM tpch.lineitem))
         group by
           l_returnflag,
           l_linestatus
@@ -48,7 +68,7 @@ Questions:
           l_returnflag,
           l_linestatus;
 
-  - Q2:
+  Q2:
       Q_GPT: Which supplier provides the minimum cost for each part available in a given region?
       Q-TPC-H: >
         The Minimum Cost Supplier Query finds, in a given region, for each part of a certain type and size, the supplier who
@@ -57,9 +77,49 @@ Questions:
         the query lists the supplier's account balance, name and nation; the part's number and manufacturer; the supplier's
         address, phone number and comment information.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        WITH RankedSuppliers AS (
+            SELECT 
+                s.s_acctbal,
+                s.s_name,
+                n.n_name AS nation,
+                p.p_partkey,
+                p.p_mfgr,
+                s.s_address,
+                s.s_phone,
+                s.s_comment,
+                ROW_NUMBER() OVER (PARTITION BY p.p_partkey ORDER BY ps.ps_supplycost, s.s_acctbal DESC) AS row_num
+            FROM 
+                tpch.supplier s
+            JOIN 
+                tpch.nation n ON s.s_nationkey = n.n_nationkey
+            JOIN 
+                tpch.partsupp ps ON s.s_suppkey = ps.ps_suppkey
+            JOIN 
+                tpch.part p ON ps.ps_partkey = p.p_partkey
+            JOIN 
+                tpch.region r ON n.n_regionkey = r.r_regionkey
+            WHERE 
+                r.r_name = 'AFRICA'
+                AND p.p_size = 5
+                AND p.p_type LIKE '%PROMO%'
+        )
+        SELECT 
+            s_acctbal,
+            s_name,
+            nation,
+            p_partkey,
+            p_mfgr,
+            s_address,
+            s_phone,
+            s_comment
+        FROM 
+            RankedSuppliers
+        WHERE 
+            row_num = 1
+        ORDER BY 
+            s_acctbal DESC
+        OFFSET 0 ROWS
+        FETCH NEXT 100 ROWS ONLY;   
       S-TPC-H: |
         select
           s_acctbal,
@@ -71,31 +131,31 @@ Questions:
           s_phone,
           s_comment
         from
-          supplier,
-          partsupp,
-          part,
-          nation,
-          region
+          tpch.supplier,
+          tpch.partsupp,
+          tpch.part,
+          tpch.nation,
+          tpch.region
         where
           p_partkey = ps_partkey
           and s_suppkey = ps_suppkey
-          and p_size = [SIZE]
-          and p_type like '%[TYPE]'
+          and p_size = 5
+          and p_type like '%PROMO%'
           and s_nationkey = n_nationkey
           and n_regionkey = r_regionkey
-          and r_name = '[REGION]'
+          and r_name = 'AFRICA'
           and ps_supplycost = (
             select
               min(ps_supplycost)
             from
-              partsupp, supplier,
-              nation, region
+              tpch.partsupp, tpch.supplier,
+              tpch.nation, tpch.region
             where
               p_partkey = ps_partkey
               and s_suppkey = ps_suppkey
               and s_nationkey = n_nationkey
               and n_regionkey = r_regionkey
-              and r_name = '[REGION]'
+              and r_name = 'AFRICA'
             )
         order by
           s_acctbal desc,
@@ -103,7 +163,7 @@ Questions:
           s_name,
           p_partkey;
 
-  - Q3:
+  Q3:
       Q_GPT: What are the top 10 unshipped orders based on revenue within a given date range?
       Q-TPC-H: >
         The Shipping Priority Query retrieves the shipping priority and potential revenue, defined as the sum of
@@ -111,56 +171,86 @@ Questions:
         of a given date. Orders are listed in decreasing order of revenue. If more than 10 unshipped orders exist, only the 10
         orders with the largest revenue are listed.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT TOP 10
+            o.o_shippriority,
+            SUM(l.l_extendedprice * (1 - l.l_discount)) AS revenue,
+            o.o_orderpriority,
+            l.l_orderkey
+        FROM
+            tpch.orders o
+        INNER JOIN
+            tpch.lineitem l ON o.o_orderkey = l.l_orderkey
+        INNER JOIN
+            tpch.customer c ON o.o_custkey = c.c_custkey
+        WHERE
+            c.c_mktsegment = 'BUILDING'
+            AND o.o_orderdate < '1995-01-01'
+            AND l.l_shipdate > '1995-01-01'
+        GROUP BY
+            o.o_shippriority,
+            o.o_orderpriority,
+            l.l_orderkey
+        ORDER BY
+            revenue DESC,
+            o.o_orderpriority;
       S-TPC-H: |
-        select
+        select top 10
           l_orderkey,
           sum(l_extendedprice * (1 - l_discount)) as revenue,
           o_orderpriority
         from
-          customer,
-          orders,
-          lineitem
+          tpch.customer,
+          tpch.orders,
+          tpch.lineitem
         where
-          c_mktsegment = '[MARKET]'
+          c_mktsegment = 'BUILDING'
           and c_custkey = o_custkey
           and l_orderkey = o_orderkey
-          and o_orderdate < date '[DATE]'
-          and l_shipdate > date '[DATE]'
+          and o_orderdate < '1995-01-01'
+          and l_shipdate > '1995-01-01'
         group by
           l_orderkey,
           o_orderpriority
         order by
           revenue desc,
-          o_orderpriority
-        limit 10;
+          o_orderpriority;
 
-  - Q4:
+  Q4:
       Q_GPT: How many orders were placed with a high-priority status within a given date range?
       Q-TPC-H: >
         The Order Priority Checking Query counts the number of orders ordered in a given quarter of a given year in which
         at least one lineitem was received by the customer later than its committed date. The query lists the count of such
         orders for each order priority sorted in ascending priority order.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            o.o_orderpriority, 
+            COUNT(DISTINCT o.o_orderkey) AS count
+        FROM 
+            tpch.orders o
+        JOIN 
+            tpch.lineitem l ON o.o_orderkey = l.l_orderkey
+        WHERE 
+            l.l_receiptdate > l.l_commitdate
+            AND o.o_orderdate >= '1992-01-01'  -- first quarter of 1992
+            AND o.o_orderdate < '1992-04-01'  -- first quarter of 1992
+        GROUP BY 
+            o.o_orderpriority
+        ORDER BY 
+            o.o_orderpriority ASC;
       S-TPC-H: |
         select
           o_orderpriority,
           count(*) as order_count
         from
-          orders,
+          tpch.orders
         where
-          co_orderdate >= date '[DATE]'
-          and o_orderdate < date '[DATE]' + interval '3' month
+          o_orderdate >= '1992-01-01'
+          and o_orderdate < '1992-04-01'
           and exists (
             select
               *
             from
-              lineitem
+              tpch.lineitem
             where
               l_orderkey = o_orderkey
               and l_commitdate < l_receiptdate
@@ -170,7 +260,7 @@ Questions:
         order by
           o_orderpriority;
 
-  - Q5:
+  Q5:
       Q_GPT: What is the total revenue of suppliers from the same nation as their customers?
       Q-TPC-H: >
         The Local Supplier Volume Query lists for each nation in a region the revenue volume that resulted from lineitem
@@ -180,20 +270,44 @@ Questions:
         revenue. Revenue volume for all qualifying lineitems in a particular nation is defined as sum(l_extendedprice * (1 -
         l_discount))
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            cn.n_name AS nation, 
+            SUM(l.l_extendedprice * (1 - l.l_discount)) AS revenue_volume
+        FROM 
+            tpch.lineitem l
+        INNER JOIN 
+            tpch.orders o ON l.l_orderkey = o.o_orderkey
+        INNER JOIN 
+            tpch.customer c ON o.o_custkey = c.c_custkey
+        INNER JOIN 
+            tpch.nation cn ON c.c_nationkey = cn.n_nationkey
+        INNER JOIN 
+            tpch.supplier s ON l.l_suppkey = s.s_suppkey
+        INNER JOIN 
+            tpch.nation sn ON s.s_nationkey = sn.n_nationkey
+        INNER JOIN 
+            tpch.region r ON cn.n_regionkey = r.r_regionkey
+        WHERE 
+            r.r_name = 'AMERICA'
+            AND o.o_orderdate >= '1995-01-01'
+            AND o.o_orderdate < '1996-01-01'
+            AND cn.n_name = sn.n_name
+        GROUP BY 
+            cn.n_name
+        ORDER BY 
+            revenue_volume DESC;
+
       S-TPC-H: |
         select
           n_name,
           sum(l_extendedprice * (1 - l_discount)) as revenue  
         from
-          customer,
-          orders,
-          lineitem,
-          supplier,
-          nation,
-          region
+          tpch.customer,
+          tpch.orders,
+          tpch.lineitem,
+          tpch.supplier,
+          tpch.nation,
+          tpch.region
         where
           c_custkey = o_custkey
           and l_orderkey = o_orderkey
@@ -201,15 +315,15 @@ Questions:
           and c_nationkey = s_nationkey
           and s_nationkey = n_nationkey
           and n_regionkey = r_regionkey
-          and r_name = '[REGION]'
-          and o_orderdate >= date '[DATE]'
-          and o_orderdate < date '[DATE]' + interval '1' year
+          and r_name = 'AMERICA'
+          and o_orderdate >= '1995-01-01' 
+          and o_orderdate < '1996-01-01' 
         group by
           n_name
         order by
           revenue desc;
 
-  - Q6:
+  Q6:
       Q_GPT: How much additional revenue would be generated if suppliers increased their prices by a given percentage?
       Q-TPC-H: >
         The Forecasting Revenue Change Query considers all the lineitems shipped in a given year with discounts between
@@ -218,21 +332,31 @@ Questions:
         potential revenue increase is equal to the sum of [l_extendedprice * l_discount] for all lineitems with discounts and
         quantities in the qualifying range.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            SUM(l.l_extendedprice * l.l_discount) AS potential_revenue_increase
+        FROM 
+            tpch.lineitem l
+        JOIN 
+            tpch.partsupp p ON l.l_partkey = p.ps_partkey
+        WHERE 
+            l.l_shipdate >= '1992-01-01' 
+            AND l.l_shipdate < '1993-01-01' 
+            AND l.l_discount BETWEEN 0 and 0.02
+            AND l.l_quantity < p.ps_availqty;
       S-TPC-H: |
-        select
-          sum(l_extendedprice*l_discount) as revenue
-        from
-          lineitem
-        where
-          l_shipdate >= date '[DATE]'
-          and l_shipdate < date '[DATE]' + interval '1' year
-          and l_discount between [DISCOUNT] - 0.01 and [DISCOUNT] + 0.01
-          and l_quantity < [QUANTITY];
+        SELECT  
+            SUM(l.l_extendedprice * l.l_discount) AS revenue
+        FROM  
+            tpch.lineitem l
+        JOIN  
+            tpch.partsupp p ON l.l_partkey = p.ps_partkey
+        WHERE  
+            l.l_shipdate >= '1992-01-01'
+            AND l.l_shipdate < '1993-01-01'
+            AND l.l_discount BETWEEN 0 AND 0.02
+            AND l.l_quantity < p.ps_availqty;
 
-  - Q7:
+  Q7:
       Q_GPT: Which suppliers have shipped the largest total volume of a specific type of part within a given time period?
       Q-TPC-H: >
         The Volume Shipping Query finds, for two given nations, the gross discounted revenues derived from lineitems in
@@ -240,99 +364,177 @@ Questions:
         The query lists the supplier nation, the customer nation, the year, and the revenue from shipments that took place in
         that year. The query orders the answer by Supplier nation, Customer nation, and year (all ascending).
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+              n1.n_name AS supplier_nation,
+              n2.n_name AS customer_nation,
+              YEAR(l.l_shipdate) AS year,
+              SUM(l.l_extendedprice * (1 - l.l_discount)) AS revenue
+          FROM 
+              tpch.lineitem l
+          JOIN 
+              tpch.supplier s ON l.l_suppkey = s.s_suppkey
+          JOIN 
+              tpch.nation n1 ON s.s_nationkey = n1.n_nationkey
+          JOIN 
+              tpch.orders o ON l.l_orderkey = o.o_orderkey
+          JOIN 
+              tpch.customer c ON o.o_custkey = c.c_custkey
+          JOIN 
+              tpch.nation n2 ON c.c_nationkey = n2.n_nationkey
+          WHERE 
+              (n1.n_name = 'BRAZIL' AND n2.n_name = 'CANADA') OR 
+              (n1.n_name = 'CANADA' AND n2.n_name = 'BRAZIL')
+              AND l.l_shipdate BETWEEN '1995-01-01' AND '1996-12-31'
+          GROUP BY 
+              n1.n_name, n2.n_name, YEAR(l.l_shipdate)
+          ORDER BY 
+              n1.n_name, n2.n_name, YEAR(l.l_shipdate);
       S-TPC-H: |
-        select
-          supp_nation,
-          cust_nation,
-          l_year, sum(volume) as revenue
-        from
-          (
-            select
-              n1.n_name as supp_nation,
-              n2.n_name as cust_nation,
-              extract(year from l_shipdate) as l_year,
-              l_extendedprice * (1 - l_discount) as volume
-            from
-              part,
-              supplier,
-              lineitem,
-              orders,
-              customer,
-              nation n1,
-              nation n2
-            where
-              s_suppkey = l_suppkey
-              and c_custkey = o_custkey
-              and o_orderkey = l_orderkey
-              and p_partkey = l_partkey
-              and s_nationkey = n1.n_nationkey
-              and c_nationkey = n2.n_nationkey
-              and (
-                (n1.n_name = '[NATION1]' and n2.n_name = '[NATION2]') or (n1.n_name = '[NATION2]' and n2.n_name = '[NATION1]')
-              )
-            and l_shipdate between date '1995-01-01' and date '1996-12-31'
-          ) as shipping
-        group by
-          supp_nation,
-          cust_nation,
-          l_year
-        order by
-          supp_nation,
-          cust_nation,
-          l_year;
+        SELECT  
+            supp_nation,  
+            cust_nation,  
+            l_year,  
+            SUM(volume) AS revenue
+        FROM  
+        (
+            SELECT  
+                n1.n_name AS supp_nation,  
+                n2.n_name AS cust_nation,  
+                YEAR(l.l_shipdate) AS l_year,  
+                l.l_extendedprice * (1 - l.l_discount) AS volume
+            FROM  
+                tpch.part p,
+                tpch.supplier s,
+                tpch.lineitem l,
+                tpch.orders o,
+                tpch.customer c,
+                tpch.nation n1,
+                tpch.nation n2
+            WHERE  
+                s.s_suppkey = l.l_suppkey
+                AND c.c_custkey = o.o_custkey
+                AND o.o_orderkey = l.l_orderkey
+                AND p.p_partkey = l.l_partkey
+                AND s.s_nationkey = n1.n_nationkey
+                AND c.c_nationkey = n2.n_nationkey
+                AND (
+                    (n1.n_name = 'BRAZIL' AND n2.n_name = 'CANADA') OR 
+                    (n1.n_name = 'CANADA' AND n2.n_name = 'BRAZIL')
+                )
+                AND l.l_shipdate BETWEEN '1995-01-01' AND '1996-12-31'
+        ) AS shipping
+        GROUP BY  
+            supp_nation,  
+            cust_nation,  
+            l_year
+        ORDER BY  
+            supp_nation,  
+            cust_nation,  
+            l_year;
 
-  - Q8:
+  Q8:
       Q_GPT: What is the market share of a given type of part within a specific country?
       Q-TPC-H: >
         The market share for a given nation within a given region is defined as the fraction of the revenue, the sum of
         [l_extendedprice * (1-l_discount)], from the products of a specified type in that region that was supplied by suppli-
         ers from the given nation. The query determines this for the years 1995 and 1996 presented in this order.
       R-TPC-H: |
-      
-      R_GPT: |
-      
-      S-TPC-H: |
-        select
-          o_year,
-          sum(case
-            when nation = '[NATION]' then volume
-            else 0
-          end) / sum(volume) as mkt_share
-        from
-          (
-            select
-              extract(year from o_orderdate) as o_year,
-              l_extendedprice * (1 - l_discount) as volume,
-              n_name as nation
-            from
-              part,
-              supplier,
-              lineitem,
-              orders,
-              customer,
-              nation,
-              region
-            where
-              p_partkey = l_partkey
-              and s_suppkey = l_suppkey
-              and l_orderkey = o_orderkey
-              and o_custkey = c_custkey
-              and c_nationkey = n1.n_nationkey
-              and n1.n_regionkey = r_regionkey
-              and r_name = '[REGION]'
-              and s_nationkey = n2.n_nationkey
-              and o_orderdate between date '1995-01-01' and date '1996-12-31'
-              and p_type = '[TYPE]'
-          ) as all_nations
-        group by
-          o_year
-        order by
-          o_year;
+        WITH revenue AS (
+            SELECT 
+                YEAR(o.o_orderdate) AS year,
+                SUM(l.l_extendedprice * (1 - l.l_discount)) AS total_revenue
+            FROM 
+                tpch.lineitem l
+            INNER JOIN 
+                tpch.orders o ON l.l_orderkey = o.o_orderkey
+            INNER JOIN 
+                tpch.part p ON l.l_partkey = p.p_partkey
+            WHERE 
+                o.o_orderdate BETWEEN '1995-01-01' AND '1996-12-31'
+                AND p.p_type = 'SMALL PLATED COPPER'
+            GROUP BY 
+                YEAR(o.o_orderdate)
+        ),
+        nation_revenue AS (
+            SELECT 
+                YEAR(o.o_orderdate) AS year,
+                SUM(l.l_extendedprice * (1 - l.l_discount)) AS nation_revenue
+            FROM 
+                tpch.lineitem l
+            INNER JOIN 
+                tpch.orders o ON l.l_orderkey = o.o_orderkey
+            INNER JOIN 
+                tpch.part p ON l.l_partkey = p.p_partkey
+            INNER JOIN 
+                tpch.supplier s ON l.l_suppkey = s.s_suppkey
+            INNER JOIN 
+                tpch.nation n ON s.s_nationkey = n.n_nationkey
+            WHERE 
+                n.n_name = 'BRAZIL'
+                AND o.o_orderdate BETWEEN '1995-01-01' AND '1996-12-31'
+                AND p.p_type = 'SMALL PLATED COPPER'
+            GROUP BY 
+                YEAR(o.o_orderdate)
+        )
+        SELECT 
+            nr.year,
+            nr.nation_revenue / r.total_revenue AS market_share
+        FROM 
+            nation_revenue nr
+        INNER JOIN 
+            revenue r ON nr.year = r.year
+        ORDER BY 
+            nr.year;
 
-  - Q9:
+      S-TPC-H: |
+        WITH revenue AS (
+            SELECT 
+                YEAR(o.o_orderdate) AS year,
+                SUM(l.l_extendedprice * (1 - l.l_discount)) AS total_revenue
+            FROM 
+                tpch.lineitem l
+            INNER JOIN 
+                tpch.orders o ON l.l_orderkey = o.o_orderkey
+            INNER JOIN 
+                tpch.part p ON l.l_partkey = p.p_partkey
+            WHERE 
+                o.o_orderdate BETWEEN '1995-01-01' AND '1996-12-31'
+                AND p.p_type = 'SMALL PLATED COPPER'
+            GROUP BY 
+                YEAR(o.o_orderdate)
+        ),
+        nation_revenue AS (
+            SELECT 
+                YEAR(o.o_orderdate) AS year,
+                SUM(l.l_extendedprice * (1 - l.l_discount)) AS nation_revenue
+            FROM 
+                tpch.lineitem l
+            INNER JOIN 
+                tpch.orders o ON l.l_orderkey = o.o_orderkey
+            INNER JOIN 
+                tpch.part p ON l.l_partkey = p.p_partkey
+            INNER JOIN 
+                tpch.supplier s ON l.l_suppkey = s.s_suppkey
+            INNER JOIN 
+                tpch.nation n ON s.s_nationkey = n.n_nationkey
+            WHERE 
+                n.n_name = 'BRAZIL'
+                AND o.o_orderdate BETWEEN '1995-01-01' AND '1996-12-31'
+                AND p.p_type = 'SMALL PLATED COPPER'
+            GROUP BY 
+                YEAR(o.o_orderdate)
+        )
+        SELECT 
+            nr.year,
+            nr.nation_revenue / r.total_revenue AS market_share
+        FROM 
+            nation_revenue nr
+        INNER JOIN 
+            revenue r ON nr.year = r.year
+        ORDER BY 
+            nr.year;
+  
+  Q9:
       Q_GPT: What is the profit for each product type by year and region?
       Q-TPC-H: >
         The Product Type Profit Measure Query finds, for each nation and each year, the profit for all parts ordered in that
@@ -341,9 +543,37 @@ Questions:
         parts in the specified line. The query lists the nations in ascending alphabetical order and, for each nation, the year
         and profit in descending order by year (most recent first).
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            n.n_name AS nation,
+            r.r_name AS region,
+            YEAR(o.o_orderdate) AS o_year,
+            p.p_type AS product_type,
+            SUM((l.l_extendedprice * (1 - l.l_discount)) - (ps.ps_supplycost * l.l_quantity)) AS sum_profit
+        FROM 
+            tpch.lineitem l
+        INNER JOIN 
+            tpch.orders o ON l.l_orderkey = o.o_orderkey
+        INNER JOIN 
+            tpch.part p ON l.l_partkey = p.p_partkey
+        INNER JOIN 
+            tpch.partsupp ps ON l.l_partkey = ps.ps_partkey AND l.l_suppkey = ps.ps_suppkey
+        INNER JOIN 
+            tpch.supplier s ON ps.ps_suppkey = s.s_suppkey
+        INNER JOIN 
+            tpch.nation n ON s.s_nationkey = n.n_nationkey
+        INNER JOIN 
+            tpch.region r ON n.n_regionkey = r.r_regionkey
+        WHERE 
+            p.p_name LIKE '%spring%green%yellow%'
+        GROUP BY 
+            n.n_name,
+            r.r_name,
+            YEAR(o.o_orderdate),
+            p.p_type
+        ORDER BY 
+            n.n_name,
+            r.r_name,
+            YEAR(o.o_orderdate) DESC;
       S-TPC-H: |
         select
           nation,
@@ -353,22 +583,22 @@ Questions:
           (
             select
               n_name as nation,
-              extract(year from o_orderdate) as o_year,
-              (l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity) as amount
+              YEAR(o_orderdate) as o_year,
+              ((l_extendedprice * (1 - l_discount)) - (ps_supplycost * l_quantity)) as amount
             from
-              part,
-              supplier,
-              lineitem,
-              orders,
-              partsupp,
-              nation
+              tpch.part,
+              tpch.supplier,
+              tpch.lineitem,
+              tpch.orders,
+              tpch.partsupp,
+              tpch.nation
             where
               s_suppkey = l_suppkey
               and ps_suppkey = s_suppkey
               and ps_partkey = p_partkey
               and l_orderkey = o_orderkey
               and s_nationkey = n_nationkey
-              and p_name like '%[COLOR]'
+              and p_name like '%spring%green%yellow%'
             )
           as profit
         group by
@@ -378,7 +608,7 @@ Questions:
           nation,
           o_year desc;
 
-  - Q10:
+  Q10:
       Q_GPT: Which customers have returned the highest total value of orders within a given time period?
       Q-TPC-H: >
         The Returned Item Reporting Query finds the top 20 customers, in terms of their effect on lost revenue for a given
@@ -387,9 +617,35 @@ Questions:
         lost. The customers are listed in descending order of lost revenue. Revenue lost is defined as
         sum(l_extendedprice*(1-l_discount)) for all qualifying lineitems.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT
+            c.c_name, 
+            c.c_address, 
+            n.n_name, 
+            c.c_phone, 
+            c.c_acctbal, 
+            c.c_comment, 
+            SUM(l.l_extendedprice * (1 - l.l_discount)) AS revenue_lost
+        FROM 
+            tpch.customer c
+        JOIN 
+            tpch.orders o ON c.c_custkey = o.o_custkey
+        JOIN 
+            tpch.lineitem l ON o.o_orderkey = l.l_orderkey
+        JOIN 
+            tpch.nation n ON c.c_nationkey = n.n_nationkey
+        WHERE 
+            l.l_returnflag = 'R' 
+            AND o.o_orderdate >= '1993-01-01' 
+            AND o.o_orderdate < '1993-04-01'  -- Change this to the desired quarter
+        GROUP BY 
+            c.c_name, 
+            c.c_address, 
+            n.n_name, 
+            c.c_phone, 
+            c.c_acctbal, 
+            c.c_comment
+        ORDER BY 
+            revenue_lost DESC;
       S-TPC-H: |
         select
           c_custkey,
@@ -401,15 +657,14 @@ Questions:
           c_comment,
           sum(l_extendedprice * (1 - l_discount)) as revenue
         from
-          customer,
-          orders,
-          lineitem,
-          nation
+          tpch.customer,
+          tpch.orders,
+          tpch.lineitem,
+          tpch.nation
         where
           c_custkey = o_custkey
           and l_orderkey = o_orderkey
-          and o_orderdate >= date '[DATE]'
-          and o_orderdate < date '[DATE]' + interval '3' month
+          and o_orderdate between '1993-01-01' and '1993-04-01'
           and l_returnflag = 'R'
           and c_nationkey = n_nationkey
         group by
@@ -423,46 +678,81 @@ Questions:
         order by
           revenue desc;
 
-  - Q11:
+  Q11:
       Q_GPT: What are the most frequently ordered parts that are currently in stock?
       Q-TPC-H: >
         The Important Stock Identification Query finds, from scanning the available stock of suppliers in a given nation, all
         the parts that represent a significant percentage of the total value of all available parts. The query displays the part
         number and the value of those parts in descending order of value.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        WITH total_value AS (
+            SELECT 
+                SUM(ps.ps_supplycost * ps.ps_availqty) AS total
+            FROM 
+                tpch.partsupp ps
+            INNER JOIN 
+                tpch.supplier s ON ps.ps_suppkey = s.s_suppkey
+            INNER JOIN 
+                tpch.nation n ON s.s_nationkey = n.n_nationkey
+            WHERE 
+                n.n_name = 'BRAZIL'  -- replace with the desired nation name
+        ),
+        part_values AS (
+            SELECT 
+                p.p_partkey AS part_number,
+                SUM(ps.ps_supplycost * ps.ps_availqty) AS part_value
+            FROM 
+                tpch.partsupp ps
+            INNER JOIN 
+                tpch.part p ON ps.ps_partkey = p.p_partkey
+            INNER JOIN 
+                tpch.supplier s ON ps.ps_suppkey = s.s_suppkey
+            INNER JOIN 
+                tpch.nation n ON s.s_nationkey = n.n_nationkey
+            WHERE 
+                n.n_name = 'BRAZIL'  -- replace with the desired nation name
+            GROUP BY 
+                p.p_partkey
+        )
+        SELECT 
+            part_number,
+            part_value
+        FROM 
+            part_values
+        WHERE 
+            part_value / (SELECT total FROM total_value) > 0.01  -- replace with the desired significant percentage (e.g., 10%)
+        ORDER BY 
+            part_value DESC;
       S-TPC-H: |
         select
           ps_partkey,
           sum(ps_supplycost * ps_availqty) as value
         from
-          partsupp,
-          supplier,
-          nation
+          tpch.partsupp,
+          tpch.supplier,
+          tpch.nation
         where
           ps_suppkey = s_suppkey
           and s_nationkey = n_nationkey
-          and n_name = '[NATION]'
+          and n_name = 'BRAZIL'
         group by
           ps_partkey having
             sum(ps_supplycost * ps_availqty) > (
               select
-                sum(ps_supplycost * ps_availqty) * [FRACTION]
+                sum(ps_supplycost * ps_availqty) * 0.01
               from
-                partsupp,
-                supplier,
-                nation
+                tpch.partsupp,
+                tpch.supplier,
+                tpch.nation
               where
                 ps_suppkey = s_suppkey
                 and s_nationkey = n_nationkey
-                and n_name = '[NATION]'
+                and n_name = 'BRAZIL'
             )
         order by
           value desc;
 
-  - Q12:
+  Q12:
       Q_GPT: What is the distribution of order priority by shipping mode for a given time period?
       Q-TPC-H: >
         The Shipping Modes and Order Priority Query counts, by ship mode, for lineitems actually received by customers in
@@ -471,9 +761,22 @@ Questions:
         sidered. The late lineitems are partitioned into two groups, those with priority URGENT or HIGH, and those with a
         priority other than URGENT or HIGH.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            l.l_shipmode,
+            SUM(CASE WHEN o.o_orderpriority IN ('1-URGENT', '2-HIGH') THEN 1 ELSE 0 END) AS high_priority_count,
+            SUM(CASE WHEN o.o_orderpriority NOT IN ('1-URGENT', '2-HIGH') THEN 1 ELSE 0 END) AS low_priority_count
+        FROM 
+            tpch.lineitem l
+        JOIN 
+            tpch.orders o ON l.l_orderkey = o.o_orderkey
+        WHERE 
+            l.l_receiptdate > l.l_commitdate 
+            AND l.l_shipdate < l.l_commitdate
+            AND l.l_shipmode IN ('TRUCK', 'SHIP')  -- replace with the two specified ship modes
+            AND l.l_receiptdate >= '1995-01-01'  -- replace with the start date
+            AND l.l_receiptdate < '1996-01-01'  -- replace with the end date
+        GROUP BY 
+            l.l_shipmode
       S-TPC-H: |
         select
           l_shipmode,
@@ -486,21 +789,21 @@ Questions:
             else 0
           end) as low_line_count
         from
-          orders,
-          lineitem
+          tpch.orders,
+          tpch.lineitem
         where
           o_orderkey = l_orderkey
-          and l_shipmode in ('[SHIPMODE1]', '[SHIPMODE2]')
+          and l_shipmode in ('TRUCK', 'SHIP')
           and l_commitdate < l_receiptdate
           and l_shipdate < l_commitdate
-          and l_receiptdate >= date '[DATE]'
-          and l_receiptdate < date '[DATE]' + interval '1' year
+          and l_receiptdate >= '1995-01-01'
+          and l_receiptdate < '1996-01-01'
         group by
           l_shipmode
         order by
           l_shipmode;
   
-  - Q13:
+  Q13:
       Q_GPT: How are customers distributed based on the number of orders they have placed?
       Q-TPC-H: >
         This query determines the distribution of customers by the number of orders they have made, including customers
@@ -508,9 +811,24 @@ Questions:
         have 1, 2, 3, etc. A check is made to ensure that the orders counted do not fall into one of several special categories
         of orders. Special categories are identified in the order comment column by looking for a particular pattern.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            NumberOfOrders,
+            COUNT(*) AS NumberOfCustomers
+        FROM (
+            SELECT 
+                c.c_custkey AS CustomerID,
+                COUNT(o.o_orderkey) AS NumberOfOrders
+            FROM 
+                tpch.customer c
+                LEFT JOIN tpch.orders o ON c.c_custkey = o.o_custkey
+                AND o.o_comment NOT LIKE '%special%express%interest%'
+            GROUP BY 
+                c.c_custkey
+        ) AS SubQuery
+        GROUP BY 
+            NumberOfOrders
+        ORDER BY 
+            NumberOfOrders;
       S-TPC-H: |
         select
           c_count, count(*) as custdist
@@ -519,9 +837,8 @@ Questions:
             c_custkey,
             count(o_orderkey)
           from
-            customer left outer join orders on
-            c_custkey = o_custkey
-            and o_comment not like ‘%[WORD1]%[WORD2]%’
+            tpch.customer left outer join tpch.orders on c_custkey = o_custkey
+            and o_comment not like '%special%express%interest%'
           group by
             c_custkey
           ) as c_orders (c_custkey, c_count)
@@ -530,76 +847,118 @@ Questions:
         order by
           custdist desc;
 
-  - Q14:
+  Q14:
       Q_GPT: What percentage of revenue came from parts sold at a promotional discount?
       Q-TPC-H: >
         The Promotion Effect Query determines what percentage of the revenue in a given year and month was derived from
         promotional parts. The query considers only parts actually shipped in that month and gives the percentage. Revenue
         is defined as (l_extendedprice * (1-l_discount)).
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            100 * SUM(CASE WHEN p.p_type LIKE 'PROMO BURNISHED STEEL' THEN l.l_extendedprice * (1 - l.l_discount) ELSE 0 END) / 
+            SUM(l.l_extendedprice * (1 - l.l_discount)) AS promo_revenue_percentage
+        FROM 
+            tpch.lineitem l
+        JOIN 
+            tpch.part p ON l.l_partkey = p.p_partkey
+        WHERE 
+            l.l_shipdate >= '1995-01-01' AND l.l_shipdate < '1995-02-01';
       S-TPC-H: |
         select
-          100.00 * sum(case
-            when p_type like 'PROMO%'
+          100 * sum(case
+            when p_type like 'PROMO BURNISHED STEEL'
             then l_extendedprice*(1-l_discount)
             else 0
             end) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue
         from
-          lineitem,
-          part
+          tpch.lineitem,
+          tpch.part
         where
           l_partkey = p_partkey
-          and l_shipdate >= date '[DATE]'
-          and l_shipdate < date '[DATE]' + interval '1' month;
+          and l_shipdate >= '1995-01-01'
+          and l_shipdate < '1995-02-01' 
   
-  - Q15:
+  Q15:
       Q_GPT: Which suppliers provide the highest total revenue within a given time frame?
       Q-TPC-H: >
         The Top Supplier Query finds the supplier who contributed the most to the overall revenue for parts shipped during
         a given quarter of a given year. In case of a tie, the query lists all suppliers whose contribution was equal to the
         maximum, presented in supplier number order.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        WITH revenue AS (
+            SELECT 
+                l.l_suppkey AS supplier_key,
+                SUM(l.l_extendedprice * (1 - l.l_discount)) AS revenue
+            FROM 
+                tpch.lineitem l
+            WHERE 
+                l.l_shipdate >= '1995-01-01' 
+                AND l.l_shipdate < '1995-04-01'  -- Change this to the desired quarter
+            GROUP BY 
+                l.l_suppkey
+        ),
+        max_revenue AS (
+            SELECT 
+                MAX(revenue) AS max_revenue
+            FROM 
+                revenue
+        )
+        SELECT 
+            s.s_suppkey AS supplier_key,
+            s.s_name AS supplier_name,
+            r.revenue
+        FROM 
+            revenue r
+        JOIN 
+            tpch.supplier s ON r.supplier_key = s.s_suppkey
+        JOIN 
+            max_revenue m ON r.revenue = m.max_revenue
+        ORDER BY 
+            s.s_suppkey;
       S-TPC-H: |
-        create view revenue[STREAM_ID] (supplier_no, total_revenue) as
-          select
-            s_suppkey,
-            sum(l_extendedprice * (1 - l_discount)) as total_revenue
-          from
-            lineitem
-          where
-            l_shipdate >= date '[DATE]'
-            and l_shipdate < date '[DATE]' + interval '3' month
-          group by
-            l_suppkey;
-        select
-          s_suppkey,
-          s_name,
-          s_address,
-          s_phone,
-          total_revenue
-        from
-          supplier,
-          revenue[STREAM_ID]
-        where
-          s_suppkey = supplier_no
-          and total_revenue = (
-            select
-              max(total_revenue)
-            from
-              revenue[STREAM_ID]
+        SELECT 
+            s.s_suppkey, 
+            s.s_name, 
+            s.s_address, 
+            s.s_phone, 
+            r.total_revenue
+        FROM 
+            tpch.supplier s
+        JOIN 
+            (
+                SELECT 
+                    l_suppkey AS s_suppkey, 
+                    SUM(l_extendedprice * (1 - l_discount)) AS total_revenue 
+                FROM 
+                    tpch.lineitem 
+                WHERE 
+                    l_shipdate >= '1995-01-01' 
+                    AND l_shipdate < '1995-04-01' 
+                GROUP BY 
+                    l_suppkey
+            ) AS r ON s.s_suppkey = r.s_suppkey
+        WHERE 
+            r.total_revenue = (
+                SELECT 
+                    MAX(total_revenue)
+                FROM 
+                    (
+                        SELECT 
+                            l_suppkey AS s_suppkey, 
+                            SUM(l_extendedprice * (1 - l_discount)) AS total_revenue 
+                        FROM 
+                            tpch.lineitem 
+                        WHERE 
+                            l_shipdate >= '1995-01-01' 
+                            AND l_shipdate < '1995-04-01' 
+                        GROUP BY 
+                            l_suppkey
+                    ) AS inner_r
             )
-        order by
-          s_suppkey;
+        ORDER BY 
+            s.s_suppkey;
 
-        drop view revenue[STREAM_ID];
-
-  - Q16:
+  Q16:
       Q_GPT: Which suppliers provide parts that have the highest demand?
       Q-TPC-H: >
         The Parts/Supplier Relationship Query counts the number of suppliers who can supply parts that satisfy a particular
@@ -607,9 +966,31 @@ Questions:
         type, not of a given brand, and not from a supplier who has had complaints registered at the Better Business Bureau.
         Results must be presented in descending count and ascending brand, type, and size.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT 
+            p.p_brand, 
+            p.p_type, 
+            p.p_size, 
+            COUNT(DISTINCT s.s_suppkey) AS supplier_count
+        FROM 
+            tpch.part p
+        JOIN 
+            tpch.partsupp ps ON p.p_partkey = ps.ps_partkey
+        JOIN 
+            tpch.supplier s ON ps.ps_suppkey = s.s_suppkey
+        WHERE 
+            p.p_size IN (15, 45, 28,41, 7, 17, 16, 33)  -- replace with the desired sizes
+            AND p.p_type NOT IN ('ECONOMY BRUSHED STEEL') 
+            AND p.p_brand NOT IN ('Brand#13')
+            AND s.s_name NOT IN (SELECT s_name FROM tpch.supplier WHERE s_comment LIKE '%complaint%express%interest%')
+        GROUP BY 
+            p.p_brand, 
+            p.p_type, 
+            p.p_size
+        ORDER BY 
+            supplier_count DESC, 
+            p.p_brand ASC, 
+            p.p_type ASC, 
+            p.p_size ASC;
       S-TPC-H: |
         select
           p_brand,
@@ -617,20 +998,20 @@ Questions:
           p_size,
           count(distinct ps_suppkey) as supplier_count
         from
-          partsupp,
-          part
+          tpch.partsupp,
+          tpch.part
         where
           ps_partkey = p_partkey
-          and p_brand <> '[BRAND]'
-          and p_type not like '[TYPE]'
-          and p_size in ([SIZE1], [SIZE2], [SIZE3], [SIZE4], [SIZE5], [SIZE6], [SIZE7], [SIZE8])
+          and p_brand <> 'Brand#13'
+          and p_type not like 'ECONOMY BRUSHED STEEL'
+          and p_size in (15, 45, 28,41, 7, 17, 16, 33)
           and ps_suppkey not in (
             select
               s_suppkey
             from
-              supplier
+              tpch.supplier
             where
-              s_comment like '%[WORD1]%[WORD2]%'
+              s_comment like '%complaint%express%interest%'
             )
         group by
           p_brand,
@@ -641,7 +1022,7 @@ Questions:
           p_type,
           p_size;
 
-  - Q17:
+  Q17:
       Q_GPT: What is the total revenue from orders consisting of small-quantity purchases?
       Q-TPC-H: >
         The Small-Quantity-Order Revenue Query considers parts of a given brand and with a given container type and
@@ -649,40 +1030,72 @@ Questions:
         base. What would be the average yearly gross (undiscounted) loss in revenue if orders for these parts with a quantity
         of less than 20% of this average were no longer taken?
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        WITH average_quantity AS (
+          SELECT AVG(l.l_quantity) AS avg_quantity
+          FROM tpch.lineitem l
+          JOIN tpch.part p ON l.l_partkey = p.p_partkey
+          WHERE p.p_brand = 'BRAND#13' AND p.p_container = 'JUMBO PKG'
+        ),
+        loss_revenue AS (
+          SELECT 
+            SUM(CASE WHEN l.l_quantity < 0.2 * aq.avg_quantity THEN l.l_extendedprice ELSE 0 END) AS loss
+          FROM tpch.lineitem l
+          JOIN tpch.part p ON l.l_partkey = p.p_partkey
+          CROSS JOIN average_quantity aq
+          WHERE p.p_brand = 'BRAND#13' AND p.p_container = 'JUMBO PKG'
+        )
+        SELECT 
+          loss / 7.0 AS avg_yearly_loss
+        FROM loss_revenue;
+
       S-TPC-H: |
         select
           sum(l_extendedprice) / 7.0 as avg_yearly
         from
-          lineitem,
-          part
+          tpch.lineitem,
+          tpch.part
         where
           l_partkey = p_partkey
-          and p_brand = '[BRAND]'
-          and p_container = '[CONTAINER]'
+          and p_brand = 'BRAND#13'
+          and p_container = 'JUMBO PKG'
           and l_quantity < (
             select
               0.2 * avg(l_quantity)
             from
-              lineitem,
-              part
+              tpch.lineitem,
+              tpch.part
             where
               l_partkey = p_partkey
             );
 
-  - Q18:
+  Q18:
       Q_GPT: Who are the customers that place the highest volume of orders?
       Q-TPC-H: >
         The Large Volume Customer Query finds a list of the top 100 customers who have ever placed large quantity orders.
         The query lists the customer name, customer key, the order key, date and total price and the quantity for the order.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        SELECT TOP 100 
+            c.c_name AS customer_name, 
+            c.c_custkey AS customer_key, 
+            o.o_orderkey AS order_key, 
+            o.o_orderdate AS order_date, 
+            o.o_totalprice AS total_price, 
+            SUM(l.l_quantity) AS total_quantity
+        FROM 
+            tpch.customer c
+        INNER JOIN 
+            tpch.orders o ON c.c_custkey = o.o_custkey
+        INNER JOIN 
+            tpch.lineitem l ON o.o_orderkey = l.l_orderkey
+        GROUP BY 
+            c.c_name, c.c_custkey, o.o_orderkey, o.o_orderdate, o.o_totalprice
+        HAVING 
+            SUM(l.l_quantity) > 100  -- adjust the threshold value as needed
+        ORDER BY 
+            o.o_totalprice DESC,
+            o.o_orderdate DESC;
       S-TPC-H: |
-        select
+        select top 100
           c_name,
           c_custkey,
           o_orderkey,
@@ -690,18 +1103,18 @@ Questions:
           o_totalprice,
           sum(l_quantity)
         from
-          customer,
-          orders,
-          lineitem
+          tpch.customer,
+          tpch.orders,
+          tpch.lineitem
         where
           o_orderkey in (
             select
               l_orderkey
             from
-              lineitem
+              tpch.lineitem
             group by
               l_orderkey having
-                sum(l_quantity) > [QUANTITY]
+                sum(l_quantity) > 100
           )
           and c_custkey = o_custkey
           and o_orderkey = l_orderkey
@@ -713,125 +1126,231 @@ Questions:
           o_totalprice
         order by
           o_totalprice desc,
-          o_orderdate
-        limit 100;
+          o_orderdate desc;
 
-  - Q19:
+  Q19:
       Q_GPT: How much revenue is generated from orders that received a discount?
       Q-TPC-H: >
         The Discounted Revenue query finds the gross discounted revenue for all orders for three different types of parts
         that were shipped by air and delivered in person. Parts are selected based on the combination of specific brands, a
         list of containers, and a range of sizes.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        -- Calculate the gross discounted revenue for all orders for three different types of parts
+        -- that were shipped by air and delivered in person.
+        SELECT 
+            -- Calculate the gross discounted revenue by summing the product of the extended price and the discount
+            SUM(l_extendedprice * (1 - l_discount)) AS gross_discounted_revenue
+        FROM 
+            -- Join the lineitem table with the part table on the partkey column
+            tpch.lineitem
+        INNER JOIN 
+            tpch.part ON l_partkey = p_partkey
+        WHERE 
+            -- Filter by brand
+            p_brand = 'BRAND#13'
+            -- Filter by container
+            AND p_container IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+            -- Filter by quantity
+            AND l_quantity >= 20 AND l_quantity <= 30
+            -- Filter by size
+            AND p_size BETWEEN 1 AND 5
+            -- Filter by ship mode
+            AND l_shipmode IN ('AIR', 'AIR REG')
+            -- Filter by ship instructions
+            AND l_shipinstruct = 'DELIVER IN PERSON';
       S-TPC-H: |
         select
           sum(l_extendedprice * (1 - l_discount)) as revenue
         from
-          lineitem,
-          part
+          tpch.lineitem,
+          tpch.part
         where
           (
             p_partkey = l_partkey
-            and p_brand = ‘[BRAND1]’
-            and p_container in ( ‘SM CASE’, ‘SM BOX’, ‘SM PACK’, ‘SM PKG’)
-            and l_quantity >= [QUANTITY1] and l_quantity <= [QUANTITY1] + 10
+            and p_brand = 'BRAND#13'
+            and p_container in ( 'SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+            and l_quantity >=20 and l_quantity <= 30
             and p_size between 1 and 5
-            and l_shipmode in (‘AIR’, ‘AIR REG’)
-            and l_shipinstruct = ‘DELIVER IN PERSON’
-          )
-          or
-          (
-            p_partkey = l_partkey
-            and p_brand = ‘[BRAND2]’
-            and p_container in ( ‘MED BAG’, ‘MED BOX’, ‘MED PKG’, ‘MED PKG’)
-            and l_quantity >= [QUANTITY2] and l_quantity <= [QUANTITY2] + 10
-            and p_size between 1 and 10
-            and l_shipmode in (‘AIR’, ‘AIR REG’)
-            and l_shipinstruct = ‘DELIVER IN PERSON’
-          )
-          or
-          (
-            p_partkey = l_partkey
-            and p_brand = ‘[BRAND3]’
-            and p_container in ( ‘LG CASE’, ‘LG BOX’, ‘LG PACK’, ‘LG PKG’)
-            and l_quantity >= [QUANTITY3] and l_quantity <= [QUANTITY3] + 10
-            and p_size between 1 and 15
-            and l_shipmode in (‘AIR’, ‘AIR REG’)
-            and l_shipinstruct = ‘DELIVER IN PERSON’
+            and l_shipmode in ('AIR', 'AIR REG')
+            and l_shipinstruct = 'DELIVER IN PERSON'
           );
 
-  - Q20:
+  Q20:
       Q_GPT: Which parts have a sales pattern that suggests they would benefit from a promotion?
       Q-TPC-H: >
         The Potential Part Promotion query identifies suppliers who have an excess of a given part available; an excess is
         defined to be more than 50% of the parts like the given part that the supplier shipped in a given year for a given
         nation. Only parts whose names share a certain naming convention are considered.
       R-TPC-H: |
-      
-      R_GPT: |
-      
-      S-TPC-H: |
-        select
-          s_name,
-          p_address,
-        from
-          supplier,
-          nation
-        where
-          s_suppkey in (
-            select
-              ps_suppkey
-            from
-              partsupp,
-              part
-            where
-              ps_partkey in (
-                select
-                  p_partkey
-                from
-                  part
-                where
-                  p_name like '%[COLOR]%'
-              )
-                and ps_availqty > 0.5 * (
-                  select
-                    sum(ps_availqty)
-                  from
-                    lineitem,
-                  where
-                    l_partkey = p_partkey
-                    and l_suppkey = ps_suppkey
-                    and l_shipdate >= date '[DATE]'
-                    and l_shipdate < date '[DATE]' + interval '1' year
-                )
-            )
-          and s_nationkey = n_nationkey
-          and n_name = '[NATION]'
-        order by
-          s_name;
+        WITH 
+        -- Calculate total quantity shipped by each supplier for each part in 1995
+        TotalQuantityShipped AS (
+            SELECT 
+                l.l_suppkey,
+                l.l_partkey,
+                SUM(l.l_quantity) AS total_quantity
+            FROM 
+                tpch.lineitem l
+            WHERE 
+                l.l_shipdate >= '1995-01-01'
+                AND l.l_shipdate < '1996-01-01'
+            GROUP BY 
+                l.l_suppkey,
+                l.l_partkey
+        ),
 
-  - Q21:
+        -- Calculate average quantity shipped by each supplier for each part in 1995
+        AverageQuantityShipped AS (
+            SELECT 
+                l.l_suppkey,
+                l.l_partkey,
+                AVG(l.total_quantity) AS average_quantity
+            FROM 
+                TotalQuantityShipped l
+            GROUP BY 
+                l.l_suppkey,
+                l.l_partkey
+        ),
+
+        -- Identify suppliers who have an excess of a given part available
+        ExcessSuppliers AS (
+            SELECT 
+                ps.ps_suppkey,
+                ps.ps_partkey,
+                ps.ps_availqty
+            FROM 
+                tpch.partsupp ps
+            JOIN 
+                tpch.nation n ON ps.ps_suppkey = n.n_nationkey
+            WHERE 
+                n.n_name = 'BRAZIL'
+                AND ps.ps_availqty > (SELECT average_quantity * 0.5 FROM AverageQuantityShipped aqs WHERE aqs.l_suppkey = ps.ps_suppkey AND aqs.l_partkey = ps.ps_partkey)
+        )
+
+        -- Select the suppliers who have an excess of a given part available
+        SELECT 
+            s.s_name,
+            p.p_name,
+            es.ps_availqty
+        FROM 
+            ExcessSuppliers es
+        JOIN 
+            tpch.supplier s ON es.ps_suppkey = s.s_suppkey
+        JOIN 
+            tpch.part p ON es.ps_partkey = p.p_partkey;
+      S-TPC-H: |
+        SELECT 
+            s.s_name, 
+            s.s_address
+        FROM 
+            tpch.supplier s
+        JOIN 
+            tpch.nation n ON s.s_nationkey = n.n_nationkey
+        WHERE 
+            s.s_suppkey IN (
+                -- Subconsulta para calcular o total de quantidade enviada por cada fornecedor e parte
+                SELECT 
+                    ps.ps_suppkey
+                FROM 
+                    tpch.partsupp ps
+                JOIN 
+                    tpch.part p ON ps.ps_partkey = p.p_partkey
+                WHERE 
+                    p.p_name LIKE '%spring%green%' 
+                    AND ps.ps_availqty > (
+                        -- Subconsulta para calcular a soma total de quantidades enviadas por cada fornecedor
+                        SELECT 
+                            0.5 * SUM(l.l_quantity)  -- 0.5 * soma de l_quantity
+                        FROM 
+                            tpch.lineitem l
+                        WHERE 
+                            l.l_partkey = p.p_partkey
+                            AND l.l_suppkey = ps.ps_suppkey
+                            AND l.l_shipdate >= '1995-01-01'
+                            AND l.l_shipdate < '1996-01-01'
+                    )
+            )
+            AND n.n_name = 'BRAZIL'
+        ORDER BY 
+            s.s_name;
+
+
+
+
+  Q21:
       Q_GPT: Which suppliers had the longest average order fulfillment time?
       Q-TPC-H: >
         The Suppliers Who Kept Orders Waiting query identifies suppliers, for a given nation, whose product was part of a
         multi-supplier order (with current status of 'F') where they were the only supplier who failed to meet the committed
         delivery date.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        WITH failed_suppliers AS (
+          SELECT 
+            l.l_suppkey,
+            l.l_orderkey,
+            l.l_commitdate,
+            l.l_shipdate
+          FROM 
+            tpch.lineitem l
+          WHERE 
+            l.l_shipdate > l.l_commitdate
+        ),
+        multi_supplier_orders AS (
+          SELECT 
+            o.o_orderkey,
+            COUNT(DISTINCT l.l_suppkey) AS num_suppliers
+          FROM 
+            tpch.orders o
+          JOIN 
+            tpch.lineitem l ON o.o_orderkey = l.l_orderkey
+          WHERE 
+            o.o_orderstatus = 'F'
+          GROUP BY 
+            o.o_orderkey
+          HAVING 
+            COUNT(DISTINCT l.l_suppkey) > 1
+        ),
+        failed_suppliers_in_multi_orders AS (
+          SELECT 
+            fs.l_suppkey,
+            fs.l_orderkey
+          FROM 
+            failed_suppliers fs
+          JOIN 
+            multi_supplier_orders mso ON fs.l_orderkey = mso.o_orderkey
+        )
+        SELECT 
+          s.s_name,
+          s.s_nationkey,
+          n.n_name AS nation_name
+        FROM 
+          failed_suppliers_in_multi_orders fs
+        JOIN 
+          tpch.supplier s ON fs.l_suppkey = s.s_suppkey
+        JOIN 
+          tpch.nation n ON s.s_nationkey = n.n_nationkey
+        WHERE 
+          fs.l_orderkey NOT IN (
+            SELECT 
+              l_orderkey
+            FROM 
+              failed_suppliers
+            WHERE 
+              l_orderkey IN (SELECT l_orderkey FROM failed_suppliers_in_multi_orders)
+            GROUP BY 
+              l_orderkey
+            HAVING 
+              COUNT(DISTINCT l_suppkey) > 1
+          )
       S-TPC-H: |
         select
           s_name,
           count(*) as numwait
         from
-          supplier,
-          lineitem l1,
-          orders,
-          nation
+          tpch.supplier,
+          tpch.lineitem l1,
+          tpch.orders,
+          tpch.nation
         where
           s_suppkey = l1.l_suppkey
           and o_orderkey = l1.l_orderkey
@@ -841,18 +1360,18 @@ Questions:
             select
               *
             from
-              lineitem l2
+              tpch.lineitem l2
             where
               l2.l_orderkey = l1.l_orderkey
               and l2.l_suppkey <> l1.l_suppkey
             )
           and s_nationkey = n_nationkey
-          and n_name = '[NATION]'
+          and n_name = 'BRAZIL'
           and not exists (
             select
               *
             from
-              lineitem l3
+              tpch.lineitem l3
             where
               l3.l_orderkey = l1.l_orderkey
               and l3.l_suppkey <> l1.l_suppkey
@@ -862,53 +1381,95 @@ Questions:
           s_name
         order by
           numwait desc,
-          s_name
-        limit 100;
+          s_name;
 
-  - Q22:
+  Q22:
       Q_GPT: Which suppliers have parts that are frequently ordered by customers in other regions?
       Q-TPC-H: >
         This query counts how many customers within a specific range of country codes have not placed orders for 7 years
         but who have a greater than average “positive” account balance. It also reflects the magnitude of that balance.
         Country code is defined as the first two characters of c_phone.
       R-TPC-H: |
-      
-      R_GPT: |
-      
+        WITH 
+        -- Get country code from customer phone number
+        customer_country AS (
+            SELECT 
+                c_custkey,
+                c_acctbal,
+                LEFT(c_phone, 2) AS country_code
+            FROM 
+                tpch.customer
+            WHERE
+                LEFT(c_phone, 2) IN ('10', '11')  -- replace with the desired country codes
+        ),
+        -- Get customers who have not placed orders for 7 years
+        inactive_customers AS (
+            SELECT 
+                c.c_custkey,
+                c.country_code,
+                c.c_acctbal
+            FROM 
+                customer_country c
+            WHERE 
+                c.c_custkey NOT IN (SELECT o_custkey FROM tpch.orders)
+        ),
+        -- Get average account balance for each country
+        avg_acctbal AS (
+            SELECT 
+                country_code,
+                AVG(c_acctbal) AS avg_balance
+            FROM 
+                inactive_customers
+            GROUP BY 
+                country_code
+        )
+        -- Get customers with above average account balance
+        SELECT 
+            ic.country_code,
+            COUNT(ic.c_custkey) AS numcust,
+            SUM(ic.c_acctbal) AS totacctbal
+        FROM 
+            inactive_customers ic
+        JOIN 
+            avg_acctbal aa ON ic.country_code = aa.country_code
+        WHERE 
+            ic.c_acctbal > aa.avg_balance
+        GROUP BY 
+            ic.country_code
+        ORDER BY 
+            numcust DESC;
+
       S-TPC-H: |
-        select
-          entrycode,
-          count(*) as numcust,
-          sum(c_acctbal) as totacctbal
-        from
-        (
-          select
-            substring(c_phone from 1 for 2) as cntrycode,
-            c_acctbal
-          from
-            customer
-          where
-            substring(c_phone from 1 for 2) in
-              ('[I1]','[I2]’,'[I3]','[I4]','[I5]','[I6]','[I7]')
-            and c_acctbal > (
-              select
-                avg(c_acctbal)
-              from
-                customer
-              where
-                substring(c_phone from 1 for 2) in
-                  ('[I1]','[I2]’,'[I3]','[I4]','[I5]','[I6]','[I7]')
-            )
-            and not exists (
-              select
-                *
-              from
-                orders
-              where
-                o_custkey = c_custkey
-            ) 
-        ) as custsale
-        group by
-          entrycode
-        order by
-          entrycode;
+        SELECT  
+            entrycode,  
+            COUNT(*) AS numcust,  
+            SUM(c_acctbal) AS totacctbal
+        FROM (
+            SELECT    
+                SUBSTRING(c_phone, 1, 2) AS entrycode,    
+                c_acctbal  
+            FROM    
+                tpch.customer  
+            WHERE    
+                SUBSTRING(c_phone, 1, 2) IN ('10', '11')    
+                AND c_acctbal > (      
+                    SELECT        
+                        AVG(c_acctbal)      
+                    FROM        
+                        tpch.customer      
+                    WHERE        
+                        SUBSTRING(c_phone, 1, 2) IN ('10', '11')    
+                )    
+                AND NOT EXISTS (      
+                    SELECT        
+                        *      
+                    FROM        
+                        tpch.orders      
+                    WHERE        
+                        o_custkey = c_custkey    
+                ) 
+        ) AS custsale
+        GROUP BY  
+            entrycode
+        ORDER BY  
+            entrycode;

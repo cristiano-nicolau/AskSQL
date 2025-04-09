@@ -16,7 +16,7 @@ Grade_type:
     - Correct-: The submitted query returns similar data but with differences in naming, column order, or presentation.
     - Incorrect: The submitted query returns completely different data compared to the reference query.
 
-Question:
+Questions:
   Q1:
     Q-AdvW: Select the job title of all male employees who are not married.
     R-AdvW: |
