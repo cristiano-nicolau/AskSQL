@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import re
 import random
-load_dotenv() 
+load_dotenv(override=True)
 
 def create_connection():
     """Cria a conexão com o banco de dados."""
@@ -86,18 +86,14 @@ def get_tables(conn):
     cursor.close()
     return data
 
-
-
 def model(query, data, client):
     """Gera a query SQL a partir de uma pergunta em linguagem natural."""
     # se a data tiver mais de 6000 palavras , tira o tipo de dados
     # If the data has more than 6000 words, remove the data types to simplify the schema
     data_str = json.dumps(data)
     if len(data_str.split()) > 1000:
-        print(len(data_str.split()))
         for table, info in data.items():
             data[table]["columns"] = [(col, "") for col, dtype in info["columns"]]
-    print(json.dumps(data, indent=4))   
     chat_completion = client.chat.completions.create(
         #
         # Required parameters
@@ -148,7 +144,6 @@ def model(query, data, client):
     )
 
     return chat_completion.choices[0].message.content
-
 
 def generate_query(msg):
     """Gera a query SQL a partir de uma pergunta em linguagem natural."""
@@ -332,6 +327,7 @@ def process_command(command, option, question):
     - /tables: List the tables and columns in the database
     - /sql: Show the SQL query generated from the user's question
     - /chart: Show the chart generated from the user's question
+    - /refactor: Modify the last prompt with new information
 
     Args:
         command (str): The command to process
@@ -401,7 +397,80 @@ def process_command(command, option, question):
                 "role": "assistant", 
                 "content": "The /chart command is only available in Chart Generation mode."
             }
+        
+    elif command == "/refactor":
+        for msg in reversed(st.session_state[f"messages_{option}"]):
+            print(msg)
+            if "prompt" in msg:
+                meta_prompt = f"old prompt: {msg['prompt']}\nnew instructions: {question}\n\nCreate a new query that applies these changes."
+                new_query_text = model(meta_prompt, st.session_state.data, st.session_state.client)
+                new_query = generate_query(new_query_text) if option in ["Report Generation", "Chart Generation"] else new_query_text
 
+                if option not in ["Report Generation", "Chart Generation"]:
+                    return {
+                        "role": "assistant", 
+                        "content": f"Here is the new query:\n{new_query}\n"
+                    }
+                else:
+                    if not new_query:
+                        return {
+                            "role": "assistant", 
+                            "content": "Error generating SQL query. Please ask a different question."
+                        }
+                    if option == "Report Generation":
+                        try:
+                            df, raw_data, columns = execute_query_report(new_query, st.session_state.conn)
+                            if df.empty:
+                                return {
+                                    "role": "assistant", 
+                                    "content": "No results found. Please try a different question."
+                                }
+                            else:
+                                return {
+                                    "role": "assistant", 
+                                    "content": raw_data, 
+                                    "raw_data": df, 
+                                    "prompt": new_query_text, 
+                                    "sql_query": new_query
+                                }
+                        except Exception as e:
+                            error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{new_query}\n```"
+                            return {
+                                "role": "assistant", 
+                                "content": error_message
+                            }
+                    elif option == "Chart Generation":
+                        try:
+                            df, raw_data, columns = execute_query_report(new_query, st.session_state.conn)
+                            if df.empty:
+                                return {
+                                    "role": "assistant", 
+                                    "content": "No results found. Please try a different question."
+                                }
+                            else:
+                                fig, code = execute_query_chart(df, new_query_text, st.session_state.client)
+                                unique_id = f"chart-{random.randint(0, 1000000)}"
+                                return {
+                                    "role": "assistant", 
+                                    "content": raw_data, 
+                                    "raw_data": df, 
+                                    "chart": fig, 
+                                    "prompt": new_query_text, 
+                                    "code": code, 
+                                    "sql_query": new_query, 
+                                    "unique_id": unique_id
+                                }
+                        except Exception as e:
+                            error_message = f"Error executing query: {str(e)}\n\nGenerated query:\n```sql\n{new_query}\n```"
+                            return {
+                                "role": "assistant", 
+                                "content": error_message
+                            }                        
+        return {
+            "role": "assistant", 
+            "content": "The /refactor command is only available if there is a previous prompt."
+        }
+                
     else:
         available_commands = "Available commands:\n\n"
         if option in ["Report Generation", "Chart Generation"]:
@@ -410,7 +479,7 @@ def process_command(command, option, question):
         if option == "Chart Generation":
             available_commands += "- **/chart**: Show the chart code generated from the user's question.\n"
 
-        available_commands += "- **/help**: Display this help message.\n- **/reset**: Reset the conversation history. \n- **/tables**: List the tables and columns in the database.\n"
+        available_commands += "- **/refactor <your prompt>**: Modify the last prompt with new information.\n - **/help**: Display this help message.\n- **/reset**: Reset the conversation history. \n- **/tables**: List the tables and columns in the database.\n"
         
         return {
             "role": "assistant", 
@@ -462,7 +531,8 @@ def main():
 
         with st.expander("Command Tags"):
             st.markdown("""
-                - **/explain <your prompt>**: Get explanation about the app and how to use it.
+                - **/explain <your prompt>**: Get explanation about the last response.
+                - **/refactor <your prompt>**: Modify the last prompt with new information.
                 - **/help**: Display this help message.
                 - **/reset**: Reset the conversation history.
                 - **/tables**: List the tables and columns in the database.
@@ -519,12 +589,21 @@ def main():
             
             if command_response:
                 st.session_state[f"messages_{option}"].append(command_response)
-                st.chat_message("assistant").write(command_response["content"])
+                if "raw_data" in command_response and "chart" not in command_response:
+                    st.dataframe(command_response["raw_data"])
+                    with st.expander("View Raw Data"):
+                        st.write(command_response["content"])
+                elif "chart" in command_response:
+                    st.plotly_chart(command_response["chart"], use_container_width=True, key=command_response["unique_id"])
+                    with st.expander("View Raw Data"):
+                        st.write(command_response["content"])
+                else:
+                    st.chat_message("assistant").write(command_response["content"])
 
         else:
             if option == "SQL Query Generation":
                 sql_query = model(prompt, st.session_state.data, st.session_state.client)
-                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": f"Here is the SQL query:\n{sql_query}\n"})
+                st.session_state[f"messages_{option}"].append({"role": "assistant", "content": f"Here is the SQL query:\n{sql_query}\n", "prompt": prompt})
                 st.chat_message("assistant").write(f"Here is the SQL query:\n{sql_query}\n")
 
             elif option == "Report Generation":

@@ -7,10 +7,10 @@
 
 
 [ ] adicionar um /report para gerar o relatório, com os resultado das queries
-[ ] adicionar um /refactor em que a ideia é quando temos um erro ele pega no comando anterior e nos dizemos olha muda isto e aquilo
+[X] adicionar um /refactor em que a ideia é quando temos um erro ele pega no comando anterior e nos dizemos olha muda isto e aquilo
 
 
 
 # NOTE:
 [ ] Adicionar no relatório a explicação das tags, e o que elas significam
-[ ] Testes
+[X] Testes
