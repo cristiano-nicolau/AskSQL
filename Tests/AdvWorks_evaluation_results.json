@@ -1,142 +1,142 @@
 [
-  {
-    "id": "Q1",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT JobTitle\nFROM HumanResources.Employee\nWHERE Gender = 'M'\nAND MaritalStatus != 'M';",
-    "submitted_query": "SELECT JobTitle\nFROM HumanResources.Employee\nWHERE Gender = 'M' AND MaritalStatus = 'S';"
-  },
-  {
-    "id": "Q2",
-    "grade": "Correct+",
-    "reason": "The answer contains all expected data plus additional information.",
-    "reference_query": "SELECT BusinessEntityID, Rate, RateChangeDate\nFROM HumanResources.EmployeePayHistory\nWHERE Rate >= 50;",
-    "submitted_query": "SELECT \n  e.BusinessEntityID, \n  e.NationalIDNumber, \n  e.LoginID, \n  e.JobTitle, \n  eph.Rate, \n  eph.RateChangeDate\nFROM \n    HumanResources.Employee e\nJOIN \n    HumanResources.EmployeePayHistory eph ON e.BusinessEntityID = eph.BusinessEntityID\nWHERE \n    eph.Rate >= 50\nORDER BY \n    e.BusinessEntityID, \n    eph.RateChangeDate DESC;"
-  },
-  {
-    "id": "Q3",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT BusinessEntityID, DepartmentID, StartDate\nFROM HumanResources.EmployeeDepartmentHistory\nWHERE StartDate BETWEEN '2008-01-01' AND '2008-12-31';",
-    "submitted_query": "SELECT \n    BusinessEntityID,\n    DepartmentID,\n    StartDate\nFROM \n    HumanResources.EmployeeDepartmentHistory\nWHERE \n    YEAR(StartDate) = 2008;"
-  },
-  {
-    "id": "Q4",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT DepartmentID, Name, GroupName\nFROM HumanResources.Department\nWHERE Name LIKE 'Prod%'\nOR GroupName LIKE '%ring';",
-    "submitted_query": "SELECT DepartmentID, Name, GroupName \nFROM HumanResources.Department \nWHERE Name LIKE 'Prod%' OR GroupName LIKE '%ring';"
-  },
-  {
-    "id": "Q5",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT Name\nFROM HumanResources.Department\nWHERE GroupName IN ('Research and Development', 'Manufacturing');",
-    "submitted_query": "SELECT Name\nFROM HumanResources.Department\nWHERE GroupName IN ('Research and Development', 'Manufacturing');"
-  },
-  {
-    "id": "Q6",
-    "grade": "Correct-",
-    "reason": "The answer contains similar data to the expected result but presented differently.",
-    "reference_query": "SELECT edh.BusinessEntityID, d.Name\nFROM HumanResources.EmployeeDepartmentHistory AS edh\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID;",
-    "submitted_query": "SELECT \n    E.BusinessEntityID AS EmployeeID,\n    STRING_AGG(D.Name, ', ') AS DepartmentNames\nFROM \n    HumanResources.Employee E\nJOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nJOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nGROUP BY \n    E.BusinessEntityID\nORDER BY \n    E.BusinessEntityID;"
-  },
-  {
-    "id": "Q7",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT e.BusinessEntityID, e.JobTitle, edh.StartDate\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nWHERE e.Gender = 'F';",
-    "submitted_query": "SELECT \n    e.BusinessEntityID AS EmployeeID,\n    e.JobTitle,\n    edh.StartDate\nFROM \n    HumanResources.Employee e\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory edh ON e.BusinessEntityID = edh.BusinessEntityID\nWHERE \n    e.Gender = 'F';"
-  },
-  {
-    "id": "Q8",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT DISTINCT e.JobTitle, d.Name\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID;",
-    "submitted_query": "SELECT DISTINCT \n    E.JobTitle, \n    D.Name AS DepartmentName\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nORDER BY \n    D.Name, \n    E.JobTitle;"
-  },
-  {
-    "id": "Q9",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT DISTINCT d.Name AS DepartmentName, s.Name AS ShiftName\nFROM HumanResources.EmployeeDepartmentHistory AS edh\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nJOIN HumanResources.Shift AS s\nON edh.ShiftID = s.ShiftID;",
-    "submitted_query": "SELECT DISTINCT \n    D.Name AS DepartmentName,\n    S.Name AS ShiftName\nFROM \n    HumanResources.EmployeeDepartmentHistory EDH\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nINNER JOIN \n    HumanResources.Shift S ON EDH.ShiftID = S.ShiftID;"
-  },
-  {
-    "id": "Q10",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT e.BusinessEntityID, d.Name, s.Name\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nJOIN HumanResources.Shift AS s\nON edh.ShiftID = s.ShiftID\nWHERE e.HireDate > '2010-01-01'\nAND d.GroupName IN ('Manufacturing', 'Quality Assurance');",
-    "submitted_query": "SELECT \n    E.BusinessEntityID AS EmployeeID,\n    D.Name AS DepartmentName,\n    S.Name AS ShiftName\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nINNER JOIN \n    HumanResources.Shift S ON EDH.ShiftID = S.ShiftID\nWHERE \n    E.HireDate > '2010-01-01'\n    AND D.GroupName IN ('Manufacturing', 'Quality Assurance');"
-  },
-  {
-    "id": "Q11",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT MIN(SickLeaveHours) AS MinSickLeaveHours,\n      MAX(SickLeaveHours) AS MaxSickLeaveHours\nFROM HumanResources.Employee;",
-    "submitted_query": "SELECT \n    MIN(SickLeaveHours) AS MinimumSickLeaveHours,\n    MAX(SickLeaveHours) AS MaximumSickLeaveHours\nFROM \n    HumanResources.Employee;"
-  },
-  {
-    "id": "Q12",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT JobTitle, AVG(VacationHours) AS AvgVacationHours\nFROM HumanResources.Employee\nGROUP BY JobTitle;",
-    "submitted_query": "SELECT \n    JobTitle, \n    AVG(VacationHours) AS AverageVacationHours\nFROM \n    HumanResources.Employee\nGROUP BY \n    JobTitle;"
-  },
-  {
-    "id": "Q13",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT Gender, COUNT(*) AS Count\nFROM HumanResources.Employee\nGROUP BY Gender;",
-    "submitted_query": "SELECT \n    Gender, \n    COUNT(BusinessEntityID) AS EmployeeCount\nFROM \n    HumanResources.Employee\nGROUP BY \n    Gender;"
-  },
-  {
-    "id": "Q14",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT GroupName, COUNT(*) AS DepartmentsCount\nFROM HumanResources.Department\nGROUP BY GroupName\nHAVING COUNT(*) > 2;",
-    "submitted_query": "SELECT \n    D.GroupName, \n    COUNT(D.DepartmentID) AS DepartmentCount\nFROM \n    HumanResources.Department D\nGROUP BY \n    D.GroupName\nHAVING \n    COUNT(D.DepartmentID) > 2;"
-  },
-  {
-    "id": "Q15",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT d.Name, SUM(e.SickLeaveHours) AS SumSickLeaveHours\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nWHERE edh.EndDate IS NULL\nGROUP BY d.Name;",
-    "submitted_query": "SELECT \n    D.Name, \n    SUM(E.SickLeaveHours) AS SumSickLeaveHours\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nWHERE \n    EDH.EndDate IS NULL  -- This condition ensures we only consider current departments\nGROUP BY \n    D.Name"
-  },
-  {
-    "id": "Q16",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT e.BusinessEntityID, e.Rate AS CurrentPayRate\nFROM HumanResources.EmployeePayHistory AS e\nWHERE e.RateChangeDate = (\n            SELECT MAX(e2.RateChangeDate)\n            FROM HumanResources.EmployeePayHistory AS e2\n            WHERE e2.BusinessEntityID = e.BusinessEntityID\n        );",
-    "submitted_query": "WITH RankedPayHistory AS (\n    SELECT \n        BusinessEntityID,\n        Rate,\n        ROW_NUMBER() OVER (PARTITION BY BusinessEntityID ORDER BY RateChangeDate DESC) AS RowNum\n    FROM \n        HumanResources.EmployeePayHistory\n)\nSELECT \n    E.BusinessEntityID AS EmployeeID,\n    RPH.Rate AS CurrentPayRate\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    RankedPayHistory RPH ON E.BusinessEntityID = RPH.BusinessEntityID\nWHERE \n    RPH.RowNum = 1;"
-  },
-  {
-    "id": "Q17",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT MIN(CurrentPayRate) AS MinPayRate,\n      AVG(CurrentPayRate) AS AvgPayRate,\n      MAX(CurrentPayRate) AS MaxPayRate\nFROM (\n        SELECT e.BusinessEntityID, e.Rate AS CurrentPayRate\n        FROM HumanResources.EmployeePayHistory AS e\n        WHERE e.RateChangeDate = (\n                SELECT MAX(e2.RateChangeDate)\n                FROM HumanResources.EmployeePayHistory AS e2\n                WHERE e2.BusinessEntityID = e.BusinessEntityID\n            )\n) AS cpr;",
-    "submitted_query": "SELECT \n    MIN(Rate) AS MinimumPayRate,\n    AVG(Rate) AS AveragePayRate,\n    MAX(Rate) AS MaximumPayRate\nFROM \n    (\n    SELECT \n        BusinessEntityID,\n        Rate,\n        ROW_NUMBER() OVER (PARTITION BY BusinessEntityID ORDER BY RateChangeDate DESC) AS RowNum\n    FROM \n        HumanResources.EmployeePayHistory\n    ) AS CurrentPayRates\nWHERE \n    RowNum = 1;"
-  },
-  {
-    "id": "Q18",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT BusinessEntityID\nFROM HumanResources.Employee\nGROUP BY BusinessEntityID\nHAVING SUM(VacationHours) > 60\n\nUNION\n\nSELECT BusinessEntityID\nFROM HumanResources.Employee\nGROUP BY BusinessEntityID\nHAVING SUM(SickLeaveHours) > 60;",
-    "submitted_query": "SELECT BusinessEntityID \nFROM HumanResources.Employee \nWHERE VacationHours > 60 OR SickLeaveHours > 60;"
-  },
-  {
-    "id": "Q19",
-    "grade": "Equal",
-    "reason": "The answer is exactly the same as the expected result.",
-    "reference_query": "SELECT e.BusinessEntityID\nFROM HumanResources.Employee AS e\nWHERE e.JobTitle IN ('Sales Representative', 'Tool Designer')\n\nINTERSECT\n\nSELECT edh.BusinessEntityID\nFROM HumanResources.EmployeeDepartmentHistory AS edh\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nWHERE d.Name IN ('Sales', 'Marketing');",
-    "submitted_query": "SELECT E.BusinessEntityID\nFROM HumanResources.Employee E\nJOIN HumanResources.EmployeeDepartmentHistory EDH\n    ON E.BusinessEntityID = EDH.BusinessEntityID\nJOIN HumanResources.Department D\n    ON EDH.DepartmentID = D.DepartmentID\nWHERE E.JobTitle IN ('Sales Representative', 'Tool Designer')\n    AND D.Name IN ('Sales', 'Marketing')\nORDER BY E.BusinessEntityID DESC;"
-  },
-  {
-    "id": "Q20",
-    "grade": "Equal",
-    "reason": "The answer is the same data but with different column names.",
-    "reference_query": "SELECT e.BusinessEntityID, e.JobTitle, d.Name AS DepartmentName\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nWHERE e.JobTitle IN ('Sales Representative', 'Marketing Manager');",
-    "submitted_query": "SELECT \n    e.BusinessEntityID AS ID,\n    e.JobTitle,\n    d.Name AS DepartmentName\nFROM \n    HumanResources.Employee e\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory edh ON e.BusinessEntityID = edh.BusinessEntityID\nINNER JOIN \n    HumanResources.Department d ON edh.DepartmentID = d.DepartmentID\nWHERE \n    e.JobTitle IN ('Sales Representative', 'Marketing Manager');"
-  }
+    {
+        "id": "Q1",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT JobTitle\nFROM HumanResources.Employee\nWHERE Gender = 'M'\nAND MaritalStatus != 'M';",
+        "submitted_query": "SELECT JobTitle\nFROM HumanResources.Employee\nWHERE Gender = 'M' AND MaritalStatus = 'S';"
+    },
+    {
+        "id": "Q2",
+        "grade": "Correct+",
+        "reason": "The answer contains all expected data plus additional columns.",
+        "reference_query": "SELECT BusinessEntityID, Rate, RateChangeDate\nFROM HumanResources.EmployeePayHistory\nWHERE Rate >= 50;",
+        "submitted_query": "SELECT \n  e.BusinessEntityID, \n  e.NationalIDNumber, \n  e.LoginID, \n  e.JobTitle, \n  eph.Rate, \n  eph.RateChangeDate\nFROM \n    HumanResources.Employee e\nJOIN \n    HumanResources.EmployeePayHistory eph ON e.BusinessEntityID = eph.BusinessEntityID\nWHERE \n    eph.Rate >= 50\nORDER BY \n    e.BusinessEntityID, \n    eph.RateChangeDate DESC;"
+    },
+    {
+        "id": "Q3",
+        "grade": "No Results",
+        "reason": "The query returned no results.",
+        "reference_query": "SELECT BusinessEntityID, DepartmentID, StartDate\nFROM HumanResources.EmployeeDepartmentHistory\nWHERE StartDate BETWEEN '2008-01-01' AND '2008-12-31';",
+        "submitted_query": "SELECT \n    BusinessEntityID,\n    DepartmentID,\n    StartDate\nFROM \n    HumanResources.EmployeeDepartmentHistory\nWHERE \n    YEAR(StartDate) = 2008;"
+    },
+    {
+        "id": "Q4",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT DepartmentID, Name, GroupName\nFROM HumanResources.Department\nWHERE Name LIKE 'Prod%'\nOR GroupName LIKE '%ring';",
+        "submitted_query": "SELECT DepartmentID, Name, GroupName \nFROM HumanResources.Department \nWHERE Name LIKE 'Prod%' OR GroupName LIKE '%ring';"
+    },
+    {
+        "id": "Q5",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT Name\nFROM HumanResources.Department\nWHERE GroupName IN ('Research and Development', 'Manufacturing');",
+        "submitted_query": "SELECT Name\nFROM HumanResources.Department\nWHERE GroupName IN ('Research and Development', 'Manufacturing');"
+    },
+    {
+        "id": "Q6",
+        "grade": "Correct-",
+        "reason": "The data contains most of the same numeric values but in different structure.",
+        "reference_query": "SELECT edh.BusinessEntityID, d.Name\nFROM HumanResources.EmployeeDepartmentHistory AS edh\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID;",
+        "submitted_query": "SELECT \n    E.BusinessEntityID AS EmployeeID,\n    STRING_AGG(D.Name, ', ') AS DepartmentNames\nFROM \n    HumanResources.Employee E\nJOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nJOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nGROUP BY \n    E.BusinessEntityID\nORDER BY \n    E.BusinessEntityID;"
+    },
+    {
+        "id": "Q7",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT e.BusinessEntityID, e.JobTitle, edh.StartDate\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nWHERE e.Gender = 'F';",
+        "submitted_query": "SELECT \n    e.BusinessEntityID AS EmployeeID,\n    e.JobTitle,\n    edh.StartDate\nFROM \n    HumanResources.Employee e\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory edh ON e.BusinessEntityID = edh.BusinessEntityID\nWHERE \n    e.Gender = 'F';"
+    },
+    {
+        "id": "Q8",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT DISTINCT e.JobTitle, d.Name\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID;",
+        "submitted_query": "SELECT DISTINCT \n    E.JobTitle, \n    D.Name AS DepartmentName\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nORDER BY \n    D.Name, \n    E.JobTitle;"
+    },
+    {
+        "id": "Q9",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT DISTINCT d.Name AS DepartmentName, s.Name AS ShiftName\nFROM HumanResources.EmployeeDepartmentHistory AS edh\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nJOIN HumanResources.Shift AS s\nON edh.ShiftID = s.ShiftID;",
+        "submitted_query": "SELECT DISTINCT \n    D.Name AS DepartmentName,\n    S.Name AS ShiftName\nFROM \n    HumanResources.EmployeeDepartmentHistory EDH\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nINNER JOIN \n    HumanResources.Shift S ON EDH.ShiftID = S.ShiftID;"
+    },
+    {
+        "id": "Q10",
+        "grade": "No Results",
+        "reason": "The query returned no results.",
+        "reference_query": "SELECT e.BusinessEntityID, d.Name, s.Name\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nJOIN HumanResources.Shift AS s\nON edh.ShiftID = s.ShiftID\nWHERE e.HireDate > '2010-01-01'\nAND d.GroupName IN ('Manufacturing', 'Quality Assurance');",
+        "submitted_query": "SELECT \n    E.BusinessEntityID AS EmployeeID,\n    D.Name AS DepartmentName,\n    S.Name AS ShiftName\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nINNER JOIN \n    HumanResources.Shift S ON EDH.ShiftID = S.ShiftID\nWHERE \n    E.HireDate > '2010-01-01'\n    AND D.GroupName IN ('Manufacturing', 'Quality Assurance');"
+    },
+    {
+        "id": "Q11",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT MIN(SickLeaveHours) AS MinSickLeaveHours,\n      MAX(SickLeaveHours) AS MaxSickLeaveHours\nFROM HumanResources.Employee;",
+        "submitted_query": "SELECT \n    MIN(SickLeaveHours) AS MinimumSickLeaveHours,\n    MAX(SickLeaveHours) AS MaximumSickLeaveHours\nFROM \n    HumanResources.Employee;"
+    },
+    {
+        "id": "Q12",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT JobTitle, AVG(VacationHours) AS AvgVacationHours\nFROM HumanResources.Employee\nGROUP BY JobTitle;",
+        "submitted_query": "SELECT \n    JobTitle, \n    AVG(VacationHours) AS AverageVacationHours\nFROM \n    HumanResources.Employee\nGROUP BY \n    JobTitle;"
+    },
+    {
+        "id": "Q13",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT Gender, COUNT(*) AS Count\nFROM HumanResources.Employee\nGROUP BY Gender;",
+        "submitted_query": "SELECT \n    Gender, \n    COUNT(BusinessEntityID) AS EmployeeCount\nFROM \n    HumanResources.Employee\nGROUP BY \n    Gender;"
+    },
+    {
+        "id": "Q14",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT GroupName, COUNT(*) AS DepartmentsCount\nFROM HumanResources.Department\nGROUP BY GroupName\nHAVING COUNT(*) > 2;",
+        "submitted_query": "SELECT \n    D.GroupName, \n    COUNT(D.DepartmentID) AS DepartmentCount\nFROM \n    HumanResources.Department D\nGROUP BY \n    D.GroupName\nHAVING \n    COUNT(D.DepartmentID) > 2;"
+    },
+    {
+        "id": "Q15",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT d.Name, SUM(e.SickLeaveHours) AS SumSickLeaveHours\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nWHERE edh.EndDate IS NULL\nGROUP BY d.Name;",
+        "submitted_query": "SELECT \n    D.Name, \n    SUM(E.SickLeaveHours) AS SumSickLeaveHours\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory EDH ON E.BusinessEntityID = EDH.BusinessEntityID\nINNER JOIN \n    HumanResources.Department D ON EDH.DepartmentID = D.DepartmentID\nWHERE \n    EDH.EndDate IS NULL  -- This condition ensures we only consider current departments\nGROUP BY \n    D.Name"
+    },
+    {
+        "id": "Q16",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT e.BusinessEntityID, e.Rate AS CurrentPayRate\nFROM HumanResources.EmployeePayHistory AS e\nWHERE e.RateChangeDate = (\n            SELECT MAX(e2.RateChangeDate)\n            FROM HumanResources.EmployeePayHistory AS e2\n            WHERE e2.BusinessEntityID = e.BusinessEntityID\n        );",
+        "submitted_query": "WITH RankedPayHistory AS (\n    SELECT \n        BusinessEntityID,\n        Rate,\n        ROW_NUMBER() OVER (PARTITION BY BusinessEntityID ORDER BY RateChangeDate DESC) AS RowNum\n    FROM \n        HumanResources.EmployeePayHistory\n)\nSELECT \n    E.BusinessEntityID AS EmployeeID,\n    RPH.Rate AS CurrentPayRate\nFROM \n    HumanResources.Employee E\nINNER JOIN \n    RankedPayHistory RPH ON E.BusinessEntityID = RPH.BusinessEntityID\nWHERE \n    RPH.RowNum = 1;"
+    },
+    {
+        "id": "Q17",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT MIN(CurrentPayRate) AS MinPayRate,\n      AVG(CurrentPayRate) AS AvgPayRate,\n      MAX(CurrentPayRate) AS MaxPayRate\nFROM (\n        SELECT e.BusinessEntityID, e.Rate AS CurrentPayRate\n        FROM HumanResources.EmployeePayHistory AS e\n        WHERE e.RateChangeDate = (\n                SELECT MAX(e2.RateChangeDate)\n                FROM HumanResources.EmployeePayHistory AS e2\n                WHERE e2.BusinessEntityID = e.BusinessEntityID\n            )\n) AS cpr;",
+        "submitted_query": "SELECT \n    MIN(Rate) AS MinimumPayRate,\n    AVG(Rate) AS AveragePayRate,\n    MAX(Rate) AS MaximumPayRate\nFROM \n    (\n    SELECT \n        BusinessEntityID,\n        Rate,\n        ROW_NUMBER() OVER (PARTITION BY BusinessEntityID ORDER BY RateChangeDate DESC) AS RowNum\n    FROM \n        HumanResources.EmployeePayHistory\n    ) AS CurrentPayRates\nWHERE \n    RowNum = 1;"
+    },
+    {
+        "id": "Q18",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT BusinessEntityID\nFROM HumanResources.Employee\nGROUP BY BusinessEntityID\nHAVING SUM(VacationHours) > 60\n\nUNION\n\nSELECT BusinessEntityID\nFROM HumanResources.Employee\nGROUP BY BusinessEntityID\nHAVING SUM(SickLeaveHours) > 60;",
+        "submitted_query": "SELECT BusinessEntityID \nFROM HumanResources.Employee \nWHERE VacationHours > 60 OR SickLeaveHours > 60;"
+    },
+    {
+        "id": "Q19",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT e.BusinessEntityID\nFROM HumanResources.Employee AS e\nWHERE e.JobTitle IN ('Sales Representative', 'Tool Designer')\n\nINTERSECT\n\nSELECT edh.BusinessEntityID\nFROM HumanResources.EmployeeDepartmentHistory AS edh\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nWHERE d.Name IN ('Sales', 'Marketing');",
+        "submitted_query": "SELECT E.BusinessEntityID\nFROM HumanResources.Employee E\nJOIN HumanResources.EmployeeDepartmentHistory EDH\n    ON E.BusinessEntityID = EDH.BusinessEntityID\nJOIN HumanResources.Department D\n    ON EDH.DepartmentID = D.DepartmentID\nWHERE E.JobTitle IN ('Sales Representative', 'Tool Designer')\n    AND D.Name IN ('Sales', 'Marketing')\nORDER BY E.BusinessEntityID DESC;"
+    },
+    {
+        "id": "Q20",
+        "grade": "Equal",
+        "reason": "The answer contains the same data values as the expected result.",
+        "reference_query": "SELECT e.BusinessEntityID, e.JobTitle, d.Name AS DepartmentName\nFROM HumanResources.Employee AS e\nJOIN HumanResources.EmployeeDepartmentHistory AS edh\nON e.BusinessEntityID = edh.BusinessEntityID\nJOIN HumanResources.Department AS d\nON edh.DepartmentID = d.DepartmentID\nWHERE e.JobTitle IN ('Sales Representative', 'Marketing Manager');",
+        "submitted_query": "SELECT \n    e.BusinessEntityID AS ID,\n    e.JobTitle,\n    d.Name AS DepartmentName\nFROM \n    HumanResources.Employee e\nINNER JOIN \n    HumanResources.EmployeeDepartmentHistory edh ON e.BusinessEntityID = edh.BusinessEntityID\nINNER JOIN \n    HumanResources.Department d ON edh.DepartmentID = d.DepartmentID\nWHERE \n    e.JobTitle IN ('Sales Representative', 'Marketing Manager');"
+    }
 ]

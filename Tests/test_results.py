@@ -57,8 +57,7 @@ def compare_results(reference_df, submitted_df):
     - Correct-: The submitted query returns similar data but with differences in naming or presentation.
     - Incorrect: The submitted query returns completely different data compared to the reference query.
     """
-    if reference_df is None or submitted_df is None:
-
+    if reference_df is None or submitted_df is None or (reference_df.empty and submitted_df.empty):
         return "No Results", "The query returned no results."
     
     # Reset indices
@@ -204,12 +203,12 @@ def extract_queries_from_yaml(yaml_file):
                 if not isinstance(content, dict):
                     continue
                     
-                if 'Q-TPC-H' in content and 'R-TPC-H' in content and 'S-TPC-H' in content:
+                if 'Q-AdvW' in content and 'R-AdvW' in content and 'S-AdvW' in content:
                     queries.append({
                         'id': question_id,
-                        'question': content.get('Q-TPC-H', ''),
-                        'reference': cleanup_query(content.get('S-TPC-H', '')),
-                        'submitted': cleanup_query(content.get('R-TPC-H', ''))
+                        'question': content.get('Q-AdvW', ''),
+                        'reference': cleanup_query(content.get('S-AdvW', '')),
+                        'submitted': cleanup_query(content.get('R-AdvW', ''))
                     })
         
         return queries
